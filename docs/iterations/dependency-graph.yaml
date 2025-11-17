@@ -1,0 +1,95 @@
+# Iteration Dependency Graph
+
+iterations:
+  "1":
+    title: "Hotkey & App Skeleton"
+    blocks: []
+    unlocks: [2, 3, 4, 5, 6, 7, 8]
+
+  "2":
+    title: "Audio Recording"
+    depends_on: [1]
+    unlocks: [3]
+
+  "3":
+    title: "STT with Whisper"
+    depends_on: [1, 2]
+    unlocks: [4]
+
+  "4":
+    title: "Clipboard + History + Flyout"
+    depends_on: [1, 2, 3]
+    unlocks: [5, 7, 8]
+    notes: "E2E dictation flow complete after this iteration"
+
+  "5":
+    title: "First-Run Wizard + Repair"
+    depends_on: [4]
+    unlocks: [6, 8]
+
+  "6":
+    title: "Settings"
+    depends_on: [5]
+    unlocks: [8]
+
+  "7":
+    title: "Optional Post-Processing"
+    depends_on: [4]
+    unlocks: [8]
+    notes: "Independent of wizard/settings; can be done in parallel with 5-6"
+
+  "8":
+    title: "Stabilization + Reset + Logs"
+    depends_on: [4, 5, 6, 7]
+    unlocks: []
+    notes: "Final iteration; v0.1 release after completion"
+
+stories:
+  US-001:
+    title: "Hotkey toggles state"
+    depends_on: []
+  US-002:
+    title: "Tray icon shows status"
+    depends_on: [US-001]
+  US-010:
+    title: "Audio recording"
+    depends_on: [US-001]
+  US-020:
+    title: "STT via Whisper CLI"
+    depends_on: [US-010]
+  US-030:
+    title: "Clipboard write"
+    depends_on: [US-020]
+  US-031:
+    title: "History file"
+    depends_on: [US-030]
+  US-032:
+    title: "Custom flyout"
+    depends_on: [US-030]
+  US-040:
+    title: "Wizard Step 1 - Data Root"
+    depends_on: [US-031]
+  US-041:
+    title: "Wizard Step 2 - Model Check"
+    depends_on: [US-040]
+  US-050:
+    title: "Settings - Hotkey"
+    depends_on: [US-040]
+  US-060:
+    title: "Post-processing"
+    depends_on: [US-030]
+  US-070:
+    title: "Reset/Uninstall"
+    depends_on: [US-040]
+
+critical_path:
+  - Iteration 1
+  - Iteration 2
+  - Iteration 3
+  - Iteration 4
+  - Iteration 5
+  - Iteration 8
+
+parallel_opportunities:
+  - "Iterations 6 and 7 can be done in parallel after Iteration 5"
+  - "US-002 and US-003 can be implemented in parallel during Iteration 1"
