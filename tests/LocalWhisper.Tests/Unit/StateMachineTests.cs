@@ -1,3 +1,4 @@
+using System.IO;
 using FluentAssertions;
 using LocalWhisper.Core;
 using LocalWhisper.Models;
@@ -18,8 +19,27 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/specification/user-stories-gherkin.md (US-001, lines 34-75)
 /// See: docs/iterations/iteration-01-hotkey-skeleton.md
 /// </remarks>
-public class StateMachineTests
+public class StateMachineTests : IDisposable
 {
+    private readonly string _testDirectory;
+
+    public StateMachineTests()
+    {
+        // Initialize AppLogger with temporary test directory
+        _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisperTests", Guid.NewGuid().ToString());
+        Directory.CreateDirectory(_testDirectory);
+        AppLogger.Initialize(_testDirectory);
+    }
+
+    public void Dispose()
+    {
+        // Cleanup test directory
+        if (Directory.Exists(_testDirectory))
+        {
+            Directory.Delete(_testDirectory, recursive: true);
+        }
+    }
+
     [Fact]
     public void Constructor_SetsInitialStateToIdle()
     {

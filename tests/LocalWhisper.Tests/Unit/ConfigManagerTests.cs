@@ -30,6 +30,9 @@ public class ConfigManagerTests : IDisposable
         _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisperTests", Guid.NewGuid().ToString());
         Directory.CreateDirectory(_testDirectory);
         _testConfigPath = Path.Combine(_testDirectory, "config.toml");
+
+        // Initialize AppLogger for tests
+        AppLogger.Initialize(_testDirectory);
     }
 
     public void Dispose()
