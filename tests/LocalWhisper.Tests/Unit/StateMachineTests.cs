@@ -33,6 +33,9 @@ public class StateMachineTests : IDisposable
 
     public void Dispose()
     {
+        // Shutdown AppLogger to release file handles
+        AppLogger.Shutdown();
+
         // Cleanup test directory
         if (Directory.Exists(_testDirectory))
         {

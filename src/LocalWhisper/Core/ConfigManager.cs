@@ -143,7 +143,8 @@ public static class ConfigManager
                     result.Add(str);
                 }
             }
-            return result.Count > 0 ? result : defaultValue;
+            // Return the parsed array even if empty - validation will catch invalid configs
+            return result;
         }
 
         return defaultValue;
