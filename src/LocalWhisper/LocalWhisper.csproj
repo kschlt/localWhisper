@@ -15,10 +15,11 @@
     <Description>Portable Windows desktop app for offline speech-to-text dictation</Description>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+  <!-- Publish settings for creating single-file executable -->
+  <!-- Note: RuntimeIdentifier should be specified during publish: dotnet publish -r win-x64 -->
+  <PropertyGroup>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishTrimmed>false</PublishTrimmed>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>

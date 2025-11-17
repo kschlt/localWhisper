@@ -20,7 +20,7 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore LocalWhisper.sln --configuration Release
+      run: dotnet restore LocalWhisper.sln
 
     - name: Build solution
       run: dotnet build LocalWhisper.sln --configuration Release --no-restore
