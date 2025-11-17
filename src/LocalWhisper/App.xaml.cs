@@ -19,6 +19,7 @@ public partial class App : Application
     private HotkeyManager? _hotkeyManager;
     private TrayIconManager? _trayIconManager;
     private AppConfig? _config;
+    private AudioRecorder? _audioRecorder;
 
     /// <summary>
     /// Application startup handler.
@@ -44,16 +45,24 @@ public partial class App : Application
             var configPath = PathHelpers.GetConfigPath(_dataRoot);
             _config = ConfigManager.Load(configPath);
 
-            // 4. Initialize state machine
+            // 4. Initialize audio recorder and check microphone availability
+            _audioRecorder = new AudioRecorder();
+            if (!_audioRecorder.IsMicrophoneAvailable())
+            {
+                ShowMicrophoneUnavailableDialog();
+                // Continue running (allow user to fix issue and restart)
+            }
+
+            // 5. Initialize state machine
             _stateMachine = new StateMachine();
 
-            // 5. Initialize tray icon (must happen before hotkey for window handle)
+            // 6. Initialize tray icon (must happen before hotkey for window handle)
             _trayIconManager = new TrayIconManager(_stateMachine);
 
-            // 6. Register hotkey
+            // 7. Register hotkey
             RegisterHotkey();
 
-            // 7. Wire hotkey events to state machine
+            // 8. Wire hotkey events to state machine
             WireHotkeyEvents();
 
             AppLogger.LogInformation("Application initialization complete");
@@ -104,33 +113,90 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Wire hotkey events to state machine (US-001).
+    /// Show microphone unavailable error dialog (US-012).
+    /// </summary>
+    private void ShowMicrophoneUnavailableDialog()
+    {
+        var dialog = new ErrorDialog(
+            title: "Kein Mikrofon gefunden",
+            message: "Bitte schließen Sie ein Mikrofon an oder prüfen Sie die Windows-Audioeinstellungen.",
+            iconType: ErrorIconType.Error
+        );
+
+        AppLogger.LogWarning("Microphone unavailable at startup");
+        dialog.ShowDialog();
+    }
+
+    /// <summary>
+    /// Wire hotkey events to state machine (US-001, US-010).
     /// </summary>
     private void WireHotkeyEvents()
     {
         _hotkeyManager!.HotkeyPressed += async (s, e) =>
         {
-            // For Iteration 1: Simulate full state flow
-            // TODO(PH-002, Iter-3): Replace simulation with real audio/STT processing
-
-            if (_stateMachine!.State == AppState.Idle)
+            if (_stateMachine!.State != AppState.Idle)
             {
-                // Hotkey pressed: Idle -> Recording
+                return; // Ignore hotkey if not idle
+            }
+
+            try
+            {
+                // Check microphone availability (US-012)
+                if (!_audioRecorder!.IsMicrophoneAvailable())
+                {
+                    ShowMicrophoneUnavailableDialog();
+                    return;
+                }
+
+                // Start recording: Idle -> Recording (US-010)
                 _stateMachine.TransitionTo(AppState.Recording);
 
-                // Simulate recording (in real version, hold duration determines recording length)
-                await Task.Delay(100);
+                var tmpPath = PathHelpers.GetTmpPath(_dataRoot!);
+                _audioRecorder.StartRecording(tmpPath);
 
-                // Auto-transition: Recording -> Processing
+                // For Iteration 2: Record for fixed duration (500ms)
+                // TODO(Iter-3): Implement proper hold-to-talk with key-up detection
+                await Task.Delay(500);
+
+                // Stop recording: Recording -> Processing
                 _stateMachine.TransitionTo(AppState.Processing);
+                var wavFilePath = _audioRecorder.StopRecording();
 
-                // Simulate processing
-                AppLogger.LogInformation("Simulated processing started (no audio/STT yet)");
-                await Task.Delay(500); // Simulate STT processing time
-                AppLogger.LogInformation("Simulated processing complete");
+                // Validate WAV file (US-011)
+                if (!WavValidator.ValidateWavFile(wavFilePath, out var errorMessage))
+                {
+                    AppLogger.LogWarning("WAV file validation failed", new { Error = errorMessage });
+                    WavValidator.MoveToFailedDirectory(wavFilePath);
+
+                    // Return to idle
+                    _stateMachine.TransitionTo(AppState.Idle);
+                    return;
+                }
+
+                // TODO(PH-002, Iter-3): Process with Whisper STT
+                AppLogger.LogInformation("WAV file ready for STT processing (placeholder)", new { WavFile = wavFilePath });
+                await Task.Delay(300); // Simulate STT processing
 
                 // Complete: Processing -> Idle
                 _stateMachine.TransitionTo(AppState.Idle);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.LogError("Error during recording/processing", ex);
+
+                // Ensure we return to idle state
+                if (_stateMachine.State != AppState.Idle)
+                {
+                    _stateMachine.TransitionTo(AppState.Idle);
+                }
+
+                // Show error dialog
+                var errorDialog = new ErrorDialog(
+                    title: "Aufnahmefehler",
+                    message: $"Fehler während der Audioaufnahme:\n\n{ex.Message}",
+                    iconType: ErrorIconType.Error
+                );
+                errorDialog.ShowDialog();
             }
         };
     }
@@ -143,6 +209,7 @@ public partial class App : Application
         AppLogger.LogInformation("Application exiting");
 
         // Cleanup resources
+        _audioRecorder?.Dispose();
         _hotkeyManager?.Dispose();
         _trayIconManager?.Dispose();
 
