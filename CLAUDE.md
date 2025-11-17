@@ -1,9 +1,15 @@
-# Dictate-to-Clipboard
+# LocalWhisper
+
+**Working Name** (replaceable before v1.0)
 
 **Portable Windows desktop app for offline speech-to-text dictation**
 
 Platform: .NET 8 + WPF | Whisper CLI | Offline-first
 Status: **Documentation complete, ready for Iteration 1**
+
+**Project Structure:** `docs/architecture/project-structure.md`
+**Icon Style Guide:** `docs/ui/icon-style-guide.md`
+**Placeholders Tracker:** `docs/meta/placeholders-tracker.md`
 
 ---
 
@@ -13,11 +19,17 @@ Status: **Documentation complete, ready for Iteration 1**
 1. `docs/meta/claude-integration-guide.md` - AI workflow & context loading
 2. `docs/iterations/iteration-plan.md` - 8-iteration roadmap
 3. `docs/specification/user-stories-gherkin.md` - BDD scenarios by iteration
+4. `docs/architecture/project-structure.md` - Solution & folder structure
+5. `docs/ui/icon-style-guide.md` - Icon specifications
 
 **Continuing implementation:**
-- Check current iteration in `docs/iterations/`
+- Check current iteration in `docs/iterations/` (e.g., `iteration-01-hotkey-skeleton.md`)
 - Load relevant FR/NFR/ADR as needed
 - Update `docs/specification/traceability-matrix.md` after adding code
+- Track placeholders in `docs/meta/placeholders-tracker.md`
+
+**Manual testing:**
+- Execute test scripts from `docs/testing/manual-test-script-iter{N}.md`
 
 ---
 
