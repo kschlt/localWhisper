@@ -76,12 +76,19 @@ public static class ConfigManager
         // Validate before saving
         config.Hotkey.Validate();
 
+        // Build TomlArray from modifiers list
+        var modifiersArray = new TomlArray();
+        foreach (var modifier in config.Hotkey.Modifiers)
+        {
+            modifiersArray.Add(modifier);
+        }
+
         // Build TOML structure
         var tomlTable = new TomlTable
         {
             ["hotkey"] = new TomlTable
             {
-                ["modifiers"] = new TomlArray(config.Hotkey.Modifiers),
+                ["modifiers"] = modifiersArray,
                 ["key"] = config.Hotkey.Key
             }
         };
