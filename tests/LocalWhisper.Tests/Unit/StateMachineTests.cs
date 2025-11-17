@@ -33,13 +33,22 @@ public class StateMachineTests : IDisposable
 
     public void Dispose()
     {
-        // Shutdown AppLogger to release file handles
-        AppLogger.Shutdown();
+        // Note: Don't call AppLogger.Shutdown() here - it's a static singleton and would
+        // interfere with other tests running in parallel (xUnit default behavior).
+        // Let Serilog auto-flush and release handles naturally.
 
-        // Cleanup test directory
+        // Cleanup test directory - may fail if AppLogger still has file handles
         if (Directory.Exists(_testDirectory))
         {
-            Directory.Delete(_testDirectory, recursive: true);
+            try
+            {
+                Directory.Delete(_testDirectory, recursive: true);
+            }
+            catch (IOException)
+            {
+                // Expected if AppLogger still has log file open
+                // Temp directories will be cleaned by OS eventually
+            }
         }
     }
 
