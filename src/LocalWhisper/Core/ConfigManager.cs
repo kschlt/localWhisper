@@ -1,0 +1,162 @@
+using System.IO;
+using LocalWhisper.Models;
+using Tomlyn;
+using Tomlyn.Model;
+
+namespace LocalWhisper.Core;
+
+/// <summary>
+/// Manages loading and saving configuration files (TOML format).
+/// </summary>
+/// <remarks>
+/// Iteration 1: Minimal config schema ([hotkey] section only).
+/// Iteration 5: Full schema with all sections.
+///
+/// TODO(PH-003, Iter-5): Expand to full schema
+/// See: docs/meta/placeholders-tracker.md (PH-003)
+/// See: docs/specification/data-structures.md (lines 49-110)
+/// </remarks>
+public static class ConfigManager
+{
+    /// <summary>
+    /// Load configuration from TOML file.
+    /// </summary>
+    /// <param name="configPath">Path to config.toml file</param>
+    /// <returns>Loaded configuration, or default if file doesn't exist</returns>
+    /// <exception cref="Exception">If TOML syntax is invalid</exception>
+    /// <exception cref="InvalidOperationException">If configuration validation fails</exception>
+    public static AppConfig Load(string configPath)
+    {
+        // Return defaults if file doesn't exist
+        if (!File.Exists(configPath))
+        {
+            AppLogger.LogInformation("Config file not found, using defaults", new { ConfigPath = configPath });
+            return GetDefault();
+        }
+
+        try
+        {
+            // Read and parse TOML
+            var tomlContent = File.ReadAllText(configPath);
+            var tomlTable = Toml.ToModel(tomlContent);
+
+            // Build config object
+            var config = new AppConfig();
+
+            // Parse [hotkey] section
+            if (tomlTable.ContainsKey("hotkey") && tomlTable["hotkey"] is TomlTable hotkeyTable)
+            {
+                config.Hotkey = new HotkeyConfig
+                {
+                    Modifiers = ParseStringArray(hotkeyTable, "modifiers", new List<string> { "Ctrl", "Shift" }),
+                    Key = ParseString(hotkeyTable, "key", "D")
+                };
+            }
+
+            // Validate configuration
+            config.Hotkey.Validate();
+
+            AppLogger.LogInformation("Config loaded successfully", new { ConfigPath = configPath });
+            return config;
+        }
+        catch (Exception ex) when (ex is not InvalidOperationException)
+        {
+            // Wrap parsing exceptions with more context
+            throw new Exception($"Failed to parse config.toml at '{configPath}': {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Save configuration to TOML file.
+    /// </summary>
+    /// <param name="configPath">Path to config.toml file</param>
+    /// <param name="config">Configuration to save</param>
+    public static void Save(string configPath, AppConfig config)
+    {
+        // Validate before saving
+        config.Hotkey.Validate();
+
+        // Build TomlArray from modifiers list
+        var modifiersArray = new TomlArray();
+        foreach (var modifier in config.Hotkey.Modifiers)
+        {
+            modifiersArray.Add(modifier);
+        }
+
+        // Build TOML structure
+        var tomlTable = new TomlTable
+        {
+            ["hotkey"] = new TomlTable
+            {
+                ["modifiers"] = modifiersArray,
+                ["key"] = config.Hotkey.Key
+            }
+        };
+
+        // Serialize to TOML string
+        var tomlContent = Toml.FromModel(tomlTable);
+
+        // Ensure directory exists
+        var directory = Path.GetDirectoryName(configPath);
+        if (!string.IsNullOrEmpty(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        // Write to file
+        File.WriteAllText(configPath, tomlContent);
+
+        AppLogger.LogInformation("Config saved successfully", new { ConfigPath = configPath });
+    }
+
+    /// <summary>
+    /// Get default configuration.
+    /// </summary>
+    public static AppConfig GetDefault()
+    {
+        return new AppConfig
+        {
+            Hotkey = new HotkeyConfig
+            {
+                Modifiers = new List<string> { "Ctrl", "Shift" },
+                Key = "D"
+            }
+        };
+    }
+
+    // Helper methods for TOML parsing
+
+    private static List<string> ParseStringArray(TomlTable table, string key, List<string> defaultValue)
+    {
+        if (!table.ContainsKey(key))
+        {
+            return defaultValue;
+        }
+
+        if (table[key] is TomlArray array)
+        {
+            var result = new List<string>();
+            foreach (var item in array)
+            {
+                if (item is string str)
+                {
+                    result.Add(str);
+                }
+            }
+            // Return the parsed array even if empty - validation will catch invalid configs
+            return result;
+        }
+
+        return defaultValue;
+    }
+
+    private static string ParseString(TomlTable table, string key, string defaultValue)
+    {
+        if (!table.ContainsKey(key))
+        {
+            return defaultValue;
+        }
+
+        return table[key] is string str ? str : defaultValue;
+    }
+}

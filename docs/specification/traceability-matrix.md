@@ -52,24 +52,24 @@
 
 ## Functional Requirements to Code Modules
 
-**Note:** This section will be populated during implementation.
+**Note:** Updated during implementation (Iteration 1 completed).
 
 | FR ID | FR Title | Code Modules | Status |
 |-------|----------|--------------|--------|
-| FR-010 | Hotkey (Hold-to-Talk) | TBD: `src/Services/HotkeyManager.cs` | Planned |
-| FR-011 | Audio Recording | TBD: `src/Services/AudioRecorder.cs` | Planned |
-| FR-012 | STT with Whisper (CLI) | TBD: `src/Adapters/WhisperCLIAdapter.cs` | Planned |
-| FR-013 | Clipboard Write | TBD: `src/Services/ClipboardService.cs` | Planned |
-| FR-014 | History File | TBD: `src/Services/HistoryWriter.cs` | Planned |
-| FR-015 | Custom Flyout | TBD: `src/UI/FlyoutNotification.xaml.cs` | Planned |
-| FR-016 | First-Run Wizard | TBD: `src/UI/WizardWindow.xaml.cs` | Planned |
-| FR-017 | Model Management | TBD: `src/Services/ModelManager.cs` | Planned |
-| FR-019 | Reset/Uninstall | TBD: `src/Services/ResetService.cs` | Planned |
-| FR-020 | Settings | TBD: `src/UI/SettingsWindow.xaml.cs` | Planned |
-| FR-021 | Error Dialogs | TBD: `src/UI/ErrorDialogs.cs` | Planned |
-| FR-022 | Post-Processing | TBD: `src/Adapters/PostProcessorAdapter.cs` | Planned |
-| FR-023 | Logging | TBD: `src/Core/AppLogger.cs` | Planned |
-| FR-024 | Slug Generation | TBD: `src/Core/SlugGenerator.cs` | Planned |
+| FR-010 | Hotkey (Hold-to-Talk) | `Core/StateMachine.cs`, `Services/HotkeyManager.cs`, `Utils/Win32Interop.cs`, `Utils/IconResources.cs`, `UI/TrayIcon/TrayIconManager.cs`, `App.xaml.cs`, `Models/AppState.cs`, `Models/AppConfig.cs`, `Core/ConfigManager.cs` | **Implemented (Iter-1)** |
+| FR-011 | Audio Recording | TBD: `src/Services/AudioRecorder.cs` | Planned (Iter-2) |
+| FR-012 | STT with Whisper (CLI) | TBD: `src/Adapters/WhisperCLIAdapter.cs` | Planned (Iter-3) |
+| FR-013 | Clipboard Write | TBD: `src/Services/ClipboardService.cs` | Planned (Iter-4) |
+| FR-014 | History File | TBD: `src/Services/HistoryWriter.cs` | Planned (Iter-4) |
+| FR-015 | Custom Flyout | TBD: `src/UI/FlyoutNotification.xaml.cs` | Planned (Iter-4) |
+| FR-016 | First-Run Wizard | TBD: `src/UI/WizardWindow.xaml.cs` | Planned (Iter-5) |
+| FR-017 | Model Management | TBD: `src/Services/ModelManager.cs` | Planned (Iter-5) |
+| FR-019 | Reset/Uninstall | TBD: `src/Services/ResetService.cs` | Planned (Iter-8) |
+| FR-020 | Settings | TBD: `src/UI/SettingsWindow.xaml.cs` | Planned (Iter-6) |
+| FR-021 | Error Dialogs | `UI/Dialogs/ErrorDialog.xaml.cs`, `UI/Dialogs/ErrorDialog.xaml`, `Models/Exceptions.cs`, `App.xaml.cs` | **Implemented (Iter-1)** |
+| FR-022 | Post-Processing | TBD: `src/Adapters/PostProcessorAdapter.cs` | Planned (Iter-7) |
+| FR-023 | Logging | `Utils/AppLogger.cs`, `Utils/PathHelpers.cs`, `App.xaml.cs` | **Implemented (Iter-1)** |
+| FR-024 | Slug Generation | TBD: `src/Core/SlugGenerator.cs` | Planned (Iter-4) |
 
 ---
 
@@ -183,12 +183,27 @@
 
 ## Reverse Trace: Implementation to Requirements
 
-**Template for future use during implementation:**
+**Updated after Iteration 1:**
 
 | Code Module | Purpose | Satisfies FRs | Related UC | Tests |
 |-------------|---------|---------------|------------|-------|
-| `HotkeyManager.cs` | Global hotkey registration | FR-010 | UC-001 | `features/DictateToClipboard.feature` @Iter-1 |
-| `AudioRecorder.cs` | WASAPI recording | FR-011 | UC-001 | `features/AudioRecording.feature` @Iter-2 |
+| **Models/AppState.cs** | Core state enum (Idle, Recording, Processing) | FR-010 | UC-001 | `tests/Unit/StateMachineTests.cs` |
+| **Models/AppConfig.cs** | Configuration data model (hotkey config) | FR-010, FR-023 | UC-001 | `tests/Unit/ConfigManagerTests.cs` |
+| **Models/StateChangedEventArgs.cs** | Event args for state transitions | FR-010 | UC-001 | `tests/Unit/StateMachineTests.cs` |
+| **Models/Exceptions.cs** | Custom exceptions (InvalidStateTransitionException, etc.) | FR-021 | UC-001 | `tests/Unit/StateMachineTests.cs` |
+| **Core/StateMachine.cs** | State machine with validation & events | FR-010 | UC-001 | `tests/Unit/StateMachineTests.cs` (11 tests) |
+| **Core/ConfigManager.cs** | TOML config load/save with validation | FR-010, FR-023 | UC-001 | `tests/Unit/ConfigManagerTests.cs` (9 tests) |
+| **Utils/AppLogger.cs** | Serilog wrapper for structured logging | FR-023 | All UCs | Manual inspection (logs in data root) |
+| **Utils/PathHelpers.cs** | Data root path resolution & creation | FR-023 | All UCs | Manual inspection |
+| **Utils/IconResources.cs** | Segoe MDL2 icon/color mappings by state | FR-010 | UC-001 | Visual verification (tray icon) |
+| **Utils/Win32Interop.cs** | P/Invoke for RegisterHotKey, WM_HOTKEY | FR-010 | UC-001 | Integration test (manual) |
+| **Services/HotkeyManager.cs** | Global hotkey registration with conflict detection | FR-010 | UC-001 | Manual test script T1-001, T1-005 |
+| **UI/Dialogs/ErrorDialog.xaml** | Error dialog XAML layout | FR-021 | UC-001 | Manual test script T1-006 |
+| **UI/Dialogs/ErrorDialog.xaml.cs** | Error dialog code-behind (Warning/Error/Info types) | FR-021 | UC-001 | Manual test script T1-006 |
+| **UI/TrayIcon/TrayIconManager.cs** | Tray icon with state-based updates | FR-010 | UC-001 | Manual test script T1-002, T1-003 |
+| **App.xaml** | Application XAML definition | FR-010, FR-023 | UC-001 | Integration test (startup) |
+| **App.xaml.cs** | Application entry point, initialization, wiring | FR-010, FR-021, FR-023 | UC-001 | Manual test script T1-001..T1-008 |
+| **AudioRecorder.cs** | WASAPI recording | FR-011 | UC-001 | `features/AudioRecording.feature` @Iter-2 (TBD) |
 | ... | ... | ... | ... | ... |
 
 ---
@@ -220,6 +235,6 @@
 
 ---
 
-**Last updated:** 2025-09-17
-**Version:** v0.1 (Initial traceability matrix)
-**Next update:** After Iteration 1 (populate code modules)
+**Last updated:** 2025-11-17
+**Version:** v0.1 (Iteration 1 complete - modules populated)
+**Next update:** After Iteration 2 (audio recording modules)
