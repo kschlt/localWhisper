@@ -20,6 +20,7 @@ public partial class App : Application
     private TrayIconManager? _trayIconManager;
     private AppConfig? _config;
     private AudioRecorder? _audioRecorder;
+    private readonly SemaphoreSlim _recordingSemaphore = new SemaphoreSlim(1, 1);
 
     /// <summary>
     /// Application startup handler.
@@ -132,73 +133,97 @@ public partial class App : Application
     /// </summary>
     private void WireHotkeyEvents()
     {
-        _hotkeyManager!.HotkeyPressed += async (s, e) =>
+        // Use synchronous handler that fires and forgets async work
+        _hotkeyManager!.HotkeyPressed += (s, e) =>
+        {
+            // Fire and forget with proper error handling
+            _ = HandleHotkeyPressAsync();
+        };
+    }
+
+    /// <summary>
+    /// Handle hotkey press asynchronously with proper error handling.
+    /// </summary>
+    private async Task HandleHotkeyPressAsync()
+    {
+        // Prevent concurrent recordings
+        if (!_recordingSemaphore.Wait(0))
+        {
+            AppLogger.LogWarning("Recording already in progress - ignoring hotkey");
+            return;
+        }
+
+        try
         {
             if (_stateMachine!.State != AppState.Idle)
             {
                 return; // Ignore hotkey if not idle
             }
 
-            try
+            // Check microphone availability (US-012)
+            if (!_audioRecorder!.IsMicrophoneAvailable())
             {
-                // Check microphone availability (US-012)
-                if (!_audioRecorder!.IsMicrophoneAvailable())
-                {
-                    ShowMicrophoneUnavailableDialog();
-                    return;
-                }
+                ShowMicrophoneUnavailableDialog();
+                return;
+            }
 
-                // Start recording: Idle -> Recording (US-010)
-                _stateMachine.TransitionTo(AppState.Recording);
+            // Start recording: Idle -> Recording (US-010)
+            _stateMachine.TransitionTo(AppState.Recording);
 
-                var tmpPath = PathHelpers.GetTmpPath(_dataRoot!);
-                _audioRecorder.StartRecording(tmpPath);
+            var tmpPath = PathHelpers.GetTmpPath(_dataRoot!);
+            _audioRecorder.StartRecording(tmpPath);
 
-                // For Iteration 2: Record for fixed duration (500ms)
-                // TODO(Iter-3): Implement proper hold-to-talk with key-up detection
-                await Task.Delay(500);
+            // For Iteration 2: Record for fixed duration (500ms)
+            // TODO(Iter-3): Implement proper hold-to-talk with key-up detection
+            await Task.Delay(500);
 
-                // Stop recording: Recording -> Processing
-                _stateMachine.TransitionTo(AppState.Processing);
-                var wavFilePath = _audioRecorder.StopRecording();
+            // Stop recording: Recording -> Processing
+            _stateMachine.TransitionTo(AppState.Processing);
+            var wavFilePath = await _audioRecorder.StopRecordingAsync();
 
-                // Validate WAV file (US-011)
-                if (!WavValidator.ValidateWavFile(wavFilePath, out var errorMessage))
-                {
-                    AppLogger.LogWarning("WAV file validation failed", new { Error = errorMessage });
-                    WavValidator.MoveToFailedDirectory(wavFilePath);
+            // Validate WAV file (US-011)
+            if (!WavValidator.ValidateWavFile(wavFilePath, out var errorMessage))
+            {
+                AppLogger.LogWarning("WAV file validation failed", new { Error = errorMessage });
+                WavValidator.MoveToFailedDirectory(wavFilePath);
 
-                    // Return to idle
-                    _stateMachine.TransitionTo(AppState.Idle);
-                    return;
-                }
+                // Return to idle
+                _stateMachine.TransitionTo(AppState.Idle);
+                return;
+            }
 
-                // TODO(PH-002, Iter-3): Process with Whisper STT
-                AppLogger.LogInformation("WAV file ready for STT processing (placeholder)", new { WavFile = wavFilePath });
-                await Task.Delay(300); // Simulate STT processing
+            // TODO(PH-002, Iter-3): Process with Whisper STT
+            AppLogger.LogInformation("WAV file ready for STT processing (placeholder)", new { WavFile = wavFilePath });
+            await Task.Delay(300); // Simulate STT processing
 
-                // Complete: Processing -> Idle
+            // Complete: Processing -> Idle
+            _stateMachine.TransitionTo(AppState.Idle);
+        }
+        catch (Exception ex)
+        {
+            AppLogger.LogError("Error during recording/processing", ex);
+
+            // Ensure we return to idle state
+            if (_stateMachine!.State != AppState.Idle)
+            {
                 _stateMachine.TransitionTo(AppState.Idle);
             }
-            catch (Exception ex)
+
+            // Show error dialog
+            Dispatcher.Invoke(() =>
             {
-                AppLogger.LogError("Error during recording/processing", ex);
-
-                // Ensure we return to idle state
-                if (_stateMachine.State != AppState.Idle)
-                {
-                    _stateMachine.TransitionTo(AppState.Idle);
-                }
-
-                // Show error dialog
                 var errorDialog = new ErrorDialog(
                     title: "Aufnahmefehler",
                     message: $"Fehler während der Audioaufnahme:\n\n{ex.Message}",
                     iconType: ErrorIconType.Error
                 );
                 errorDialog.ShowDialog();
-            }
-        };
+            });
+        }
+        finally
+        {
+            _recordingSemaphore.Release();
+        }
     }
 
     /// <summary>
@@ -209,6 +234,7 @@ public partial class App : Application
         AppLogger.LogInformation("Application exiting");
 
         // Cleanup resources
+        _recordingSemaphore?.Dispose();
         _audioRecorder?.Dispose();
         _hotkeyManager?.Dispose();
         _trayIconManager?.Dispose();

@@ -19,13 +19,20 @@ namespace LocalWhisper.Services;
 /// </remarks>
 public class AudioRecorder : IDisposable
 {
+    private readonly object _lock = new object();
     private WaveInEvent? _waveIn;
     private WaveFileWriter? _waveWriter;
     private string? _outputFilePath;
-    private bool _isRecording;
+    private volatile bool _isRecording;
+    private TaskCompletionSource<bool>? _stoppedSignal;
+    private DateTime _recordingStartTime;
 
     // Target format for Whisper: 16kHz, mono, 16-bit PCM
     private static readonly WaveFormat TargetFormat = new WaveFormat(16000, 16, 1);
+
+    // Resource limits
+    private const int MaxRecordingDurationSeconds = 60;
+    private const long MaxFileSizeBytes = 10 * 1024 * 1024; // 10 MB
 
     /// <summary>
     /// Gets whether recording is currently active.
@@ -58,59 +65,67 @@ public class AudioRecorder : IDisposable
     /// <exception cref="InvalidOperationException">If already recording or no microphone available</exception>
     public void StartRecording(string outputDirectory)
     {
-        if (_isRecording)
+        lock (_lock)
         {
-            throw new InvalidOperationException("Already recording. Stop the current recording before starting a new one.");
-        }
-
-        if (!IsMicrophoneAvailable())
-        {
-            throw new InvalidOperationException("No microphone available. Please connect an audio input device.");
-        }
-
-        try
-        {
-            // Generate timestamp-based filename: rec_YYYYMMDD_HHmmssfff.wav
-            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmssfff");
-            var filename = $"rec_{timestamp}.wav";
-            _outputFilePath = Path.Combine(outputDirectory, filename);
-
-            // Ensure output directory exists
-            Directory.CreateDirectory(outputDirectory);
-
-            // Initialize WaveInEvent with target format: 16kHz, mono, 16-bit
-            _waveIn = new WaveInEvent
+            if (_isRecording)
             {
-                WaveFormat = TargetFormat,
-                DeviceNumber = 0, // Default device
-                BufferMilliseconds = 50 // Low latency buffer
-            };
+                throw new InvalidOperationException("Already recording. Stop the current recording before starting a new one.");
+            }
 
-            // Create WaveFileWriter with target format
-            _waveWriter = new WaveFileWriter(_outputFilePath, TargetFormat);
-
-            // Attach data available event
-            _waveIn.DataAvailable += OnDataAvailable;
-            _waveIn.RecordingStopped += OnRecordingStopped;
-
-            // Start capturing
-            _waveIn.StartRecording();
-            _isRecording = true;
-
-            AppLogger.LogInformation("Audio recording started", new
+            if (!IsMicrophoneAvailable())
             {
-                OutputFile = _outputFilePath,
-                SampleRate = TargetFormat.SampleRate,
-                Channels = TargetFormat.Channels,
-                BitsPerSample = TargetFormat.BitsPerSample
-            });
-        }
-        catch (Exception ex)
-        {
-            // Cleanup on error
-            Cleanup();
-            AppLogger.LogError("Failed to start audio recording", ex);
-            throw new InvalidOperationException($"Failed to start recording: {ex.Message}", ex);
+                throw new InvalidOperationException("No microphone available. Please connect an audio input device.");
+            }
+
+            try
+            {
+                // Generate timestamp-based filename: rec_YYYYMMDD_HHmmssfff.wav
+                var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmssfff");
+                var filename = $"rec_{timestamp}.wav";
+                _outputFilePath = Path.Combine(outputDirectory, filename);
+
+                // Ensure output directory exists
+                Directory.CreateDirectory(outputDirectory);
+
+                // Initialize completion signal
+                _stoppedSignal = new TaskCompletionSource<bool>();
+                _recordingStartTime = DateTime.Now;
+
+                // Initialize WaveInEvent with target format: 16kHz, mono, 16-bit
+                _waveIn = new WaveInEvent
+                {
+                    WaveFormat = TargetFormat,
+                    DeviceNumber = 0, // Default device
+                    BufferMilliseconds = 100 // Increased from 50ms for stability
+                };
+
+                // Create WaveFileWriter with target format
+                _waveWriter = new WaveFileWriter(_outputFilePath, TargetFormat);
+
+                // Attach data available event
+                _waveIn.DataAvailable += OnDataAvailable;
+                _waveIn.RecordingStopped += OnRecordingStopped;
+
+                // Start capturing
+                _waveIn.StartRecording();
+                _isRecording = true;
+
+                AppLogger.LogInformation("Audio recording started", new
+                {
+                    OutputFile = _outputFilePath,
+                    SampleRate = TargetFormat.SampleRate,
+                    Channels = TargetFormat.Channels,
+                    BitsPerSample = TargetFormat.BitsPerSample,
+                    MaxDuration = MaxRecordingDurationSeconds
+                });
+            }
+            catch (Exception ex)
+            {
+                // Cleanup on error
+                Cleanup();
+                AppLogger.LogError("Failed to start audio recording", ex);
+                throw new InvalidOperationException($"Failed to start recording: {ex.Message}", ex);
+            }
         }
     }
 
@@ -119,21 +134,34 @@ public class AudioRecorder : IDisposable
     /// </summary>
     /// <returns>Path to the saved WAV file</returns>
     /// <exception cref="InvalidOperationException">If not currently recording</exception>
-    public string StopRecording()
+    public async Task<string> StopRecordingAsync()
     {
-        if (!_isRecording)
+        lock (_lock)
         {
-            throw new InvalidOperationException("Not currently recording. Call StartRecording() first.");
+            if (!_isRecording)
+            {
+                throw new InvalidOperationException("Not currently recording. Call StartRecording() first.");
+            }
+
+            // Stop capturing (this will trigger OnRecordingStopped)
+            _waveIn?.StopRecording();
+            _isRecording = false;
         }
 
         try
         {
-            // Stop capturing
-            _waveIn?.StopRecording();
-            _isRecording = false;
+            // Wait for RecordingStopped event to fire (with timeout)
+            if (_stoppedSignal != null)
+            {
+                var stoppedTask = _stoppedSignal.Task;
+                var timeoutTask = Task.Delay(1000); // 1 second timeout
+                var completedTask = await Task.WhenAny(stoppedTask, timeoutTask);
 
-            // Give a moment for final buffer to flush
-            System.Threading.Thread.Sleep(50);
+                if (completedTask == timeoutTask)
+                {
+                    AppLogger.LogWarning("Recording stop timeout - proceeding anyway");
+                }
+            }
 
             // Flush and close WAV file
             _waveWriter?.Flush();
@@ -143,10 +171,13 @@ public class AudioRecorder : IDisposable
             var savedFilePath = _outputFilePath!;
 
             var fileInfo = new FileInfo(savedFilePath);
+            var duration = DateTime.Now - _recordingStartTime;
+
             AppLogger.LogInformation("Audio recording stopped", new
             {
                 SavedFile = savedFilePath,
-                FileSize = fileInfo.Length
+                FileSize = fileInfo.Length,
+                Duration = duration.TotalSeconds
             });
 
             // Cleanup capture device
@@ -163,12 +194,39 @@ public class AudioRecorder : IDisposable
     }
 
     /// <summary>
+    /// Stop audio recording synchronously (for backwards compatibility).
+    /// </summary>
+    /// <returns>Path to the saved WAV file</returns>
+    [Obsolete("Use StopRecordingAsync() instead")]
+    public string StopRecording()
+    {
+        return StopRecordingAsync().GetAwaiter().GetResult();
+    }
+
+    /// <summary>
     /// Event handler for captured audio data.
     /// </summary>
     private void OnDataAvailable(object? sender, WaveInEventArgs e)
     {
         if (_waveWriter != null && e.BytesRecorded > 0)
         {
+            // Check resource limits
+            var duration = DateTime.Now - _recordingStartTime;
+            if (duration.TotalSeconds > MaxRecordingDurationSeconds)
+            {
+                AppLogger.LogWarning("Max recording duration exceeded - stopping", new { Duration = duration.TotalSeconds });
+                _waveIn?.StopRecording();
+                return;
+            }
+
+            var fileSize = _waveWriter.Length;
+            if (fileSize > MaxFileSizeBytes)
+            {
+                AppLogger.LogWarning("Max file size exceeded - stopping", new { FileSize = fileSize });
+                _waveIn?.StopRecording();
+                return;
+            }
+
             // Write captured audio data to WAV file
             _waveWriter.Write(e.Buffer, 0, e.BytesRecorded);
         }
@@ -183,6 +241,9 @@ public class AudioRecorder : IDisposable
         {
             AppLogger.LogError("Recording stopped due to error", e.Exception);
         }
+
+        // Signal that recording has stopped
+        _stoppedSignal?.TrySetResult(true);
     }
 
     /// <summary>
