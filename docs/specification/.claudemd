@@ -1,0 +1,308 @@
+# Requirements Specification Context
+
+This directory contains all requirements for Dictate-to-Clipboard with stable IDs.
+
+---
+
+## Files in This Directory
+
+**Use Cases (UC-###):**
+- `use-cases.md` - UC-001 through UC-004
+- Describes **what users need to accomplish**
+
+**Functional Requirements (FR-###):**
+- `functional-requirements.md` - FR-010 through FR-024
+- Describes **what the system must do**
+
+**Non-Functional Requirements (NFR-###):**
+- `non-functional-requirements.md` - NFR-001 through NFR-006
+- Describes **quality attributes** (performance, portability, etc.)
+
+**Data Structures:**
+- `data-structures.md` - Config format (TOML), history structure, file paths
+
+**Traceability:**
+- `traceability-matrix.md` - Maps UC → FR → US → Code
+- `user-stories-gherkin.md` - All user stories in one place
+
+---
+
+## Key Concepts
+
+**Stable IDs:**
+- Once assigned, IDs do not change
+- If requirements evolve, deprecate old ID and create new one
+- All implementation references these IDs
+
+**Traceability Chain:**
+```
+UC-001 (Use Case: Quick dictation)
+  ├─ FR-010 (Hotkey registration)
+  │   └─ US-001 (Hotkey toggles state) → HotkeyManager.cs
+  ├─ FR-011 (Audio recording)
+  │   └─ US-010 (Record audio on hold) → AudioRecorder.cs
+  ├─ FR-012 (STT via Whisper)
+  │   └─ US-020 (Invoke Whisper CLI) → WhisperCLIAdapter.cs
+  └─ FR-013 (Clipboard write)
+      └─ US-030 (Write to clipboard) → ClipboardService.cs
+```
+
+---
+
+## Use Cases (UC-###)
+
+**UC-001: Quick Dictation**
+- Primary flow: Hold hotkey → speak → release → text in clipboard
+
+**UC-002: First-Run Installation**
+- Setup wizard: Choose data root → verify model → configure hotkey
+
+**UC-003: Change Settings**
+- Settings UI to modify configuration
+
+**UC-004: Reset/Uninstall**
+- Clean removal of app data
+
+**See:** `use-cases.md` for full descriptions
+
+---
+
+## Functional Requirements (FR-###)
+
+**Core Dictation Flow:**
+- FR-010: Hotkey registration (global, customizable)
+- FR-011: Audio recording (WASAPI, 16kHz mono WAV)
+- FR-012: STT via Whisper CLI (subprocess invocation)
+- FR-013: Clipboard write (system clipboard API)
+- FR-014: History (auto-save as Markdown files)
+- FR-015: Flyout notification (custom window)
+
+**Setup & Configuration:**
+- FR-016: First-run wizard (3 steps)
+- FR-017: Model verification (SHA-256 hash)
+- FR-020: Settings UI (hotkey, language, data root, etc.)
+
+**Optional Features:**
+- FR-022: Post-processing via LLM (optional, off by default)
+
+**Maintenance:**
+- FR-019: Reset/uninstall (delete data root)
+
+**Quality:**
+- FR-021: Error handling (user-friendly dialogs, no crashes)
+- FR-023: Logging (structured, rotated at 10 MB)
+- FR-024: Slug generation (filename from transcript)
+
+**See:** `functional-requirements.md` for detailed specifications
+
+---
+
+## Non-Functional Requirements (NFR-###)
+
+**NFR-001: Performance**
+- p95 latency ≤ 2.5s (hotkey release → clipboard ready)
+- Verified in Iteration 4 and 8
+
+**NFR-002: Portability**
+- No admin rights required
+- Single EXE, self-contained
+- Runs on Windows 10/11
+
+**NFR-003: Reliability**
+- No crashes in error matrix testing
+- Graceful degradation
+
+**NFR-004: Usability**
+- Wizard completes in < 2 min
+- Flyout appears within 0.5s after clipboard write
+
+**NFR-005: Privacy**
+- All processing offline (no cloud)
+- Optional telemetry (off by default)
+
+**NFR-006: Observability**
+- Structured logging for all key operations
+- Performance metrics logged
+
+**See:** `non-functional-requirements.md` for targets and verification
+
+---
+
+## Data Structures
+
+**Config File (TOML):**
+```toml
+[general]
+data_root = "C:\\Users\\...\\AppData\\Local\\DictateToClipboard"
+language = "de"
+
+[hotkey]
+key = "D"
+modifiers = ["Ctrl", "Shift"]
+
+[stt]
+model_name = "whisper-base"
+model_path = "models/whisper-base.bin"
+```
+
+**History File Structure:**
+```
+<DATA_ROOT>/history/
+  2025/
+    2025-09/
+      2025-09-17/
+        20250917_143022_let-me-check-on-that.md
+        20250917_150133_another-dictation.md
+```
+
+**See:** `data-structures.md` for full schemas
+
+---
+
+## Traceability Matrix
+
+Maps every requirement to:
+- Which iteration implements it
+- Which user story (US-###) covers it
+- Which code module satisfies it
+
+**Example:**
+| Req ID | Description | Status | Code Module | Iteration | Story |
+|--------|-------------|--------|-------------|-----------|-------|
+| FR-010 | Hotkey registration | Implemented | HotkeyManager.cs | Iter-1 | US-001 |
+| FR-011 | Audio recording | Implemented | AudioRecorder.cs | Iter-2 | US-010 |
+
+**See:** `traceability-matrix.md` for full table
+
+---
+
+## How to Use Requirements
+
+### When implementing a user story:
+
+1. **Read the user story** (in iteration file)
+   - Extract acceptance criteria (AC:)
+   - Note referenced FR-###, NFR-###, UC-###
+
+2. **Load referenced requirements:**
+   ```bash
+   Grep: "FR-012" in specification/functional-requirements.md
+   Grep: "NFR-001" in specification/non-functional-requirements.md
+   ```
+
+3. **Check constraints:**
+   - Read referenced ADRs (in `docs/adr/`)
+   - Check interface contracts (in `docs/architecture/interface-contracts.md`)
+
+4. **Implement to satisfy AC:**
+   - Write failing test first (BDD scenario)
+   - Implement minimum code to pass
+   - Refactor for clarity
+
+5. **Update traceability:**
+   - Add code module to `traceability-matrix.md`
+
+### When requirements are ambiguous:
+
+1. Check if ADR-#### provides clarification
+2. Check if "Fit:" criteria exist (measurable targets)
+3. Look for examples in data structures or contracts
+4. If still unclear: ASK via AskUserQuestion tool
+
+### When requirements conflict:
+
+1. Check traceability matrix for priority
+2. Review NFR-### for trade-off guidance
+3. Check ADR-#### for architectural constraints
+4. Flag for human review if unresolved
+
+---
+
+## Requirements Coverage
+
+**Use Cases:** 4 (UC-001 through UC-004)
+**Functional Requirements:** 14 (FR-010 through FR-024, non-sequential)
+**Non-Functional Requirements:** 6 (NFR-001 through NFR-006)
+**User Stories:** ~30 across 8 iterations
+
+**All requirements are:**
+- ✓ Documented with stable IDs
+- ✓ Traceable to use cases
+- ✓ Mapped to iterations
+- ✓ Covered by BDD scenarios
+
+---
+
+## Common Queries
+
+**Find which requirements a use case satisfies:**
+```bash
+Read: use-cases.md (find UC-001)
+Read: traceability-matrix.md (find all FR-### linked to UC-001)
+```
+
+**Find which iteration implements a requirement:**
+```bash
+Read: traceability-matrix.md (find FR-012 → see Iteration 3)
+```
+
+**Find BDD scenarios for a requirement:**
+```bash
+Grep: "@FR-012" in docs/testing/bdd-feature-seeds.md
+```
+
+**Check if a requirement is measurable:**
+```bash
+Read: non-functional-requirements.md (find NFR-001 → p95 ≤ 2.5s)
+```
+
+---
+
+## Updating Requirements
+
+**When to update:**
+- A requirement changes scope or acceptance criteria
+- Tests reveal ambiguities
+- New edge cases discovered during implementation
+
+**How to update:**
+1. Edit the relevant file (functional-requirements.md, etc.)
+2. Update traceability matrix if impacts change
+3. Add version note: "Updated 2025-11-17: ..."
+4. Commit with message: `docs: [FR-012] Add timeout parameter`
+
+**When NOT to update:**
+- Code refactoring doesn't change external behavior
+- Implementation details change (document in code comments)
+
+---
+
+## Anti-Patterns (Avoid These)
+
+❌ **Implementing without reading requirements:**
+- Always load referenced FR-### before coding
+
+❌ **Changing requirements mid-iteration:**
+- Finish current iteration first, then propose change
+
+❌ **Ignoring NFR targets:**
+- Measure performance (NFR-001, NFR-004)
+- Don't skip measurable targets
+
+❌ **Breaking traceability:**
+- Always reference FR-###, US-###, UC-### in commits
+- Update traceability matrix when adding code
+
+---
+
+## Related Context Files
+
+- **Architecture:** `docs/architecture/.claudemd`
+- **Iterations:** `docs/iterations/.claudemd`
+- **Testing:** `docs/testing/.claudemd`
+
+---
+
+**Last Updated:** 2025-11-17
+**Total Requirements:** 24 (4 UC + 14 FR + 6 NFR)
+**Status:** Complete and stable for v0.1

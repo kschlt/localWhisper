@@ -1,0 +1,406 @@
+# Iteration Execution Context
+
+This directory contains the implementation roadmap organized into 8 vertical-slice iterations.
+
+---
+
+## Files in This Directory
+
+**Iteration Planning:**
+- `iteration-plan.md` - Full roadmap with dependencies
+- `dependency-graph.yaml` - Story-level dependencies
+
+**Iteration Details:**
+- `iteration-01-hotkey-skeleton.md` - Hotkey & app skeleton
+- `iteration-02-audio-recording.md` - Audio recording
+- `iteration-03-stt-whisper.md` - STT integration
+- `iteration-04-clipboard-history-flyout.md` - E2E flow complete
+- `iteration-05-wizard-repair.md` - First-run wizard
+- `iteration-06-settings.md` - Settings UI
+- `iteration-07-post-processing.md` - Optional LLM post-processing
+- `iteration-08-stabilization-reset.md` - Stabilization & reset
+
+---
+
+## Iteration Roadmap
+
+| # | Focus | Deliverables | Effort | Status |
+|---|-------|--------------|--------|--------|
+| 1 | Hotkey & Skeleton | Tray app, hotkey, state machine | 4-6h | **← START HERE** |
+| 2 | Audio Recording | WASAPI recording, WAV files | 4-6h | Planned |
+| 3 | STT Integration | Whisper CLI adapter, JSON parsing | 6-8h | Planned |
+| 4 | Clipboard + History + Flyout | Full E2E dictation flow | 6-10h | ★ Milestone 1 |
+| 5 | Wizard + Repair | Setup wizard, model verification | 8-12h | Planned |
+| 6 | Settings UI | Configuration panel | 4-6h | Planned |
+| 7 | Post-Processing | LLM integration (optional) | 4-6h | Planned |
+| 8 | Stabilization + Reset | Error handling, reset, NFR verification | 6-10h | ★ v0.1 Release |
+
+**Total Effort:** ~40-60 hours
+
+**Dependencies:** 1 → 2 → 3 → 4 → {5, 7} → 6, 8
+
+---
+
+## Key Principles
+
+**Vertical Slices:**
+- Each iteration delivers end-to-end functionality (not horizontal layers)
+- Every iteration is testable and demonstrable
+
+**Sequential Execution:**
+- Do NOT skip iterations (dependencies exist)
+- Complete Definition of Done before moving forward
+
+**INVEST Stories:**
+- Independent, Negotiable, Valuable, Estimable, Small, Testable
+- Each user story has explicit acceptance criteria
+
+**Traceability:**
+- Every story traces to FR-###, NFR-###, UC-###
+- Update traceability matrix after adding code
+
+---
+
+## Iteration Execution Process
+
+### Phase 1: Pre-Iteration Checklist (15-30 min)
+
+Before starting Iteration N:
+- [ ] All previous iterations (1 to N-1) are complete
+- [ ] Read: `iteration-{N}-*.md` completely
+- [ ] Read: `dependency-graph.yaml` (check prerequisites)
+- [ ] Load: All referenced FR-###, NFR-###, UC-### from `docs/specification/`
+- [ ] Load: All referenced ADR-#### from `docs/adr/`
+- [ ] Review: Interface contracts (if applicable) in `docs/architecture/interface-contracts.md`
+- [ ] Review: BDD scenarios tagged `@Iter-{N}` in `docs/testing/bdd-feature-seeds.md`
+
+### Phase 2: Analysis & Planning (15-30 min)
+
+1. **Extract user stories:**
+   - List all US-### in iteration
+   - Note acceptance criteria (AC:)
+   - Identify measurable targets (Fit:)
+
+2. **Map requirements:**
+   - Create working note: US-### → FR-### → AC
+   - Identify which components to create/modify
+
+3. **Check architecture:**
+   - Review relevant ADRs for constraints
+   - Check interface contracts if working with CLI adapters
+
+### Phase 3: Implementation (2-6+ hours)
+
+**For each user story (TDD approach):**
+
+1. **Write failing test** (BDD scenario or unit test)
+2. **Implement minimum code** to pass test
+3. **Refactor** for clarity and maintainability
+4. **Add logging** for key operations (structured, key-value pairs)
+5. **Verify acceptance criteria**
+6. **Commit** with message: `feat(iter-{N}): [US-###] Description`
+
+**Error handling (per FR-021):**
+- Catch all exceptions
+- Log with context
+- Show user-friendly dialogs
+- Keep app stable (no crashes)
+
+**Observability (per FR-023, NFR-006):**
+- Log state transitions
+- Log performance metrics (durations, sizes)
+- Use structured logging (key-value pairs)
+
+### Phase 4: Testing (1-2 hours)
+
+1. **Run BDD scenarios:**
+   ```bash
+   dotnet test --filter "Category=Iter-{N}"
+   ```
+
+2. **Manual verification:**
+   - Test each acceptance criterion manually
+   - Verify UI behavior, logging, error handling
+
+3. **Performance testing (if NFR applies):**
+   - Measure p95 latency (NFR-001)
+   - Measure flyout latency (NFR-004)
+   - Document results in changelog
+
+4. **Regression testing:**
+   - Run all previous iteration tests
+   - Ensure no breakage
+
+### Phase 5: Documentation & Traceability (30 min)
+
+1. **Update traceability matrix:**
+   - Add entries for newly implemented code modules
+   - Link FR-### → Code file → Iteration → US-###
+
+2. **Update changelog:**
+   - List implemented stories
+   - Document test results
+   - Note any metrics measured
+
+3. **Update docs (if needed):**
+   - Add TODO for ambiguities
+   - Propose new ADR if architectural decision made
+   - Add implementation notes to iteration file
+
+### Phase 6: Definition of Done (15 min)
+
+**Check DoD from iteration file:**
+- [ ] All US-### acceptance criteria satisfied
+- [ ] All BDD scenarios tagged `@Iter-{N}` pass
+- [ ] No regressions (previous tests pass)
+- [ ] Logging added for state transitions and errors
+- [ ] Traceability matrix updated
+- [ ] Changelog entry added
+- [ ] Performance metrics measured (if NFR applies)
+- [ ] Error handling per FR-021
+- [ ] Specification reviewed (updated if needed)
+
+**Commit & Push:**
+```bash
+git add .
+git commit -m "feat(iter-{N}): Complete iteration {N} - {Title}
+
+Implemented:
+- US-###: ...
+- US-###: ...
+
+Tests: @Iter-{N} passing
+DoD: [x] Code [x] Tests [x] Logs [x] Docs [x] Traceability
+
+Satisfies: FR-###, NFR-###, UC-###
+See: docs/iterations/iteration-{N}-*.md"
+
+git push origin <branch-name>
+```
+
+---
+
+## Iteration Milestones
+
+**Milestone 1: E2E Dictation (After Iteration 4)**
+- User can dictate via hotkey → text in clipboard
+- History file created
+- Flyout confirms completion
+- p95 latency measured and documented
+
+**Milestone 2: Complete Setup (After Iteration 5)**
+- First-run wizard functional
+- Model verification works
+- Repair flow handles missing data root
+
+**Milestone 3: v0.1 Release (After Iteration 8)**
+- All FR-### implemented
+- All NFR-### verified
+- Error handling robust
+- Reset/uninstall works
+
+---
+
+## Definition of Done (Every Iteration)
+
+**Code:**
+- [ ] All user stories (US-###) implemented
+- [ ] Acceptance criteria satisfied
+- [ ] Follows .NET conventions
+- [ ] No hardcoded paths or magic numbers
+
+**Tests:**
+- [ ] BDD scenarios tagged `@Iter-{N}` pass
+- [ ] Unit/integration tests pass (if applicable)
+- [ ] No regressions (previous iteration tests pass)
+
+**Observability:**
+- [ ] Logging added for state transitions
+- [ ] Errors logged with context
+- [ ] Performance metrics instrumented (if NFR applies)
+
+**Documentation:**
+- [ ] Traceability matrix updated
+- [ ] Changelog entry added
+- [ ] Specifications reviewed (updated if needed)
+
+**Quality:**
+- [ ] Error handling per FR-021
+- [ ] NFR targets met (if applicable to iteration)
+- [ ] Code reviewed (self-review checklist)
+
+---
+
+## User Story Template
+
+Each iteration file contains user stories in this format:
+
+```markdown
+### US-001: Hotkey toggles state
+
+**As a** user
+**I want** the hotkey to toggle recording state
+**So that** I can start/stop dictation with one key
+
+**AC (Acceptance Criteria):**
+- KeyDown → State transitions Idle → Recording
+- KeyUp → State transitions Recording → Idle
+- State transitions are logged
+- Tray icon reflects current state
+
+**Fit:**
+- Log entry: "State: Idle → Recording"
+- Log entry: "State: Recording → Idle"
+
+**References:**
+- FR-010 (Hotkey registration)
+- UC-001 (Quick dictation)
+- ADR-0001 (Platform)
+
+**BDD:** @Iter-1 @FR-010 @UC-001
+```
+
+---
+
+## Common Queries
+
+**Find which iteration implements a requirement:**
+```bash
+Read: docs/specification/traceability-matrix.md
+# Find FR-012 → see Iteration 3
+```
+
+**Load iteration context:**
+```bash
+Read: iteration-03-stt-whisper.md
+# Extract US-### list, AC, references
+```
+
+**Find BDD scenarios for iteration:**
+```bash
+Grep: "@Iter-3" in docs/testing/bdd-feature-seeds.md
+```
+
+**Check iteration dependencies:**
+```bash
+Read: dependency-graph.yaml
+# Verify prerequisites before starting
+```
+
+**Check DoD for iteration:**
+```bash
+Read: iteration-{N}-*.md
+# Find "Definition of Done" section at bottom
+```
+
+---
+
+## Handling Common Issues
+
+**Issue: Acceptance criterion is ambiguous**
+1. Check referenced FR-### for more detail
+2. Check ADR-#### for guidance
+3. Look for "Fit:" criteria with measurable targets
+4. If still unclear: ASK via AskUserQuestion tool
+5. Document clarification in iteration file
+
+**Issue: Technical blocker (e.g., library doesn't support feature)**
+1. Check if ADR-#### constrains the approach
+2. Evaluate alternative implementations
+3. If changes architecture: propose new ADR
+4. If changes requirements: flag for review
+5. Document workaround or decision
+
+**Issue: Performance target (NFR) is missed**
+1. Profile to find bottleneck
+2. Check if assumption was wrong
+3. Optimize critical path
+4. If target unrealistic: flag for NFR-### adjustment
+5. Document actual performance in changelog
+
+---
+
+## Iteration-Specific Notes
+
+**Iteration 1:**
+- Foundation for all others
+- Focus on state machine, hotkey, tray UI
+- No audio or STT yet (stub the flow)
+
+**Iteration 3:**
+- First external dependency (Whisper CLI)
+- Test CLI adapter with mock executable first
+- Measure initial STT latency
+
+**Iteration 4:**
+- E2E flow complete (major milestone!)
+- Measure p95 latency (NFR-001)
+- Verify flyout latency (NFR-004)
+
+**Iteration 5:**
+- First-run experience critical
+- Measure wizard completion time (NFR-004: < 2 min)
+- Test on fresh Windows VM
+
+**Iteration 8:**
+- Final stabilization
+- Re-measure all NFRs
+- Test full error matrix
+- Prepare for v0.1 release
+
+---
+
+## Anti-Patterns (Avoid These)
+
+❌ **Implementing ahead:**
+- Don't implement Iteration 5 features while in Iteration 3
+
+❌ **Skipping DoD:**
+- Don't move to next iteration without completing checklist
+
+❌ **Ignoring tests:**
+- Don't skip BDD scenarios or regression tests
+
+❌ **Breaking traceability:**
+- Don't commit without referencing US-###, FR-###
+
+❌ **Scope creep:**
+- Don't add features not in current iteration plan
+
+---
+
+## Tips for Efficient Execution
+
+**Batch related tasks:**
+- Read all iteration context at once
+- Implement related US-### together
+- Run tests in bulk after each feature
+
+**Use templates:**
+- Copy BDD scenario structure from `docs/testing/bdd-feature-seeds.md`
+- Use consistent commit message format
+- Use logging template from FR-023 examples
+
+**Stay focused:**
+- Only implement features in current iteration
+- Don't refactor code outside current scope
+- Don't add "nice to have" features
+
+**Ask early:**
+- If AC is unclear, ask immediately
+- If dependency is missing, flag it
+- If performance seems off, measure and report
+
+---
+
+## Related Context Files
+
+- **Requirements:** `docs/specification/.claudemd`
+- **Architecture:** `docs/architecture/.claudemd`
+- **Testing:** `docs/testing/.claudemd`
+
+---
+
+**Last Updated:** 2025-11-17
+**Current Status:** Ready to start Iteration 1
+**Next Milestone:** E2E Dictation (after Iteration 4)
