@@ -20,10 +20,10 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore LocalWhisper.sln
+      run: dotnet restore LocalWhisper.sln --runtime win-x64
 
     - name: Build solution
-      run: dotnet build LocalWhisper.sln --configuration Release --no-restore
+      run: dotnet build LocalWhisper.sln --configuration Release --no-restore --runtime win-x64
 
     - name: Run unit tests
       run: dotnet test LocalWhisper.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
