@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Interop;
 using LocalWhisper.Adapters;
@@ -5,6 +6,7 @@ using LocalWhisper.Core;
 using LocalWhisper.Models;
 using LocalWhisper.Services;
 using LocalWhisper.UI.Dialogs;
+using LocalWhisper.UI.Flyout;
 using LocalWhisper.UI.TrayIcon;
 using LocalWhisper.Utils;
 
@@ -22,6 +24,8 @@ public partial class App : Application
     private AppConfig? _config;
     private AudioRecorder? _audioRecorder;
     private WhisperCLIAdapter? _whisperAdapter;
+    private ClipboardWriter? _clipboardWriter;
+    private HistoryWriter? _historyWriter;
     private readonly SemaphoreSlim _recordingSemaphore = new SemaphoreSlim(1, 1);
 
     /// <summary>
@@ -58,6 +62,10 @@ public partial class App : Application
 
             // 4.5. Initialize Whisper CLI adapter (Iteration 3)
             _whisperAdapter = new WhisperCLIAdapter(_config.Whisper);
+
+            // 4.6. Initialize clipboard and history writers (Iteration 4)
+            _clipboardWriter = new ClipboardWriter();
+            _historyWriter = new HistoryWriter();
 
             // 5. Initialize state machine
             _stateMachine = new StateMachine();
@@ -205,15 +213,98 @@ public partial class App : Application
                 if (sttResult.IsEmpty)
                 {
                     AppLogger.LogInformation("No speech detected in recording");
-                    // TODO(Iter-4): Show flyout notification for empty result
+                    FlyoutWindow.Show("Keine Sprache erkannt", FlyoutWindow.FlyoutType.Warning);
+                    _stateMachine.TransitionTo(AppState.Idle);
+                    return;
+                }
+
+                // Start E2E latency measurement (US-033)
+                var e2eStopwatch = Stopwatch.StartNew();
+
+                // 1. Write to clipboard (US-030)
+                var clipboardSuccess = false;
+                try
+                {
+                    var clipboardStopwatch = Stopwatch.StartNew();
+                    await _clipboardWriter!.WriteAsync(sttResult.Text);
+                    clipboardStopwatch.Stop();
+                    clipboardSuccess = true;
+
+                    AppLogger.LogInformation("Clipboard write succeeded", new
+                    {
+                        TextLength = sttResult.Text.Length,
+                        Clipboard_Write_Duration_Ms = clipboardStopwatch.ElapsedMilliseconds
+                    });
+                }
+                catch (ClipboardLockedException ex)
+                {
+                    AppLogger.LogError("Clipboard locked - cannot write", ex, new
+                    {
+                        RetryCount = ex.RetryCount
+                    });
+
+                    FlyoutWindow.Show("Zwischenablage gesperrt", FlyoutWindow.FlyoutType.Warning);
+                    // Continue to history write anyway
+                }
+
+                // 2. Write to history (US-031)
+                try
+                {
+                    var historyStopwatch = Stopwatch.StartNew();
+                    var historyEntry = new HistoryEntry
+                    {
+                        Created = DateTimeOffset.Now,
+                        Text = sttResult.Text,
+                        Language = sttResult.Language,
+                        SttModel = Path.GetFileName(_config!.Whisper.ModelPath),
+                        DurationSeconds = sttResult.DurationSeconds,
+                        PostProcessed = false
+                    };
+
+                    var historyPath = await _historyWriter!.WriteAsync(historyEntry, _dataRoot!);
+                    historyStopwatch.Stop();
+
+                    AppLogger.LogInformation("History file created", new
+                    {
+                        Path = historyPath,
+                        History_Write_Duration_Ms = historyStopwatch.ElapsedMilliseconds
+                    });
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.LogWarning("History write failed - continuing anyway", new
+                    {
+                        Error = ex.Message
+                    });
+                    // Do not block on history failure
+                }
+
+                // 3. Show flyout notification (US-032)
+                e2eStopwatch.Stop();
+                AppLogger.LogInformation("E2E dictation completed", new
+                {
+                    E2E_Latency_Ms = e2eStopwatch.ElapsedMilliseconds,
+                    TranscriptLength = sttResult.Text.Length,
+                    ClipboardSuccess = clipboardSuccess
+                });
+
+                var flyoutStopwatch = Stopwatch.StartNew();
+                if (clipboardSuccess)
+                {
+                    FlyoutWindow.Show("Transkript im Clipboard", FlyoutWindow.FlyoutType.Success);
                 }
                 else
                 {
-                    AppLogger.LogInformation("Transcription successful", new { Text = sttResult.Text, Language = sttResult.Language });
-                    // TODO(Iter-4): Write to clipboard and show in flyout
+                    FlyoutWindow.Show("Transkript gespeichert (Clipboard fehlgeschlagen)", FlyoutWindow.FlyoutType.Warning);
                 }
+                flyoutStopwatch.Stop();
 
-                // Complete: Processing -> Idle
+                AppLogger.LogInformation("Flyout displayed", new
+                {
+                    Flyout_Display_Latency_Ms = flyoutStopwatch.ElapsedMilliseconds
+                });
+
+                // 4. Return to idle
                 _stateMachine.TransitionTo(AppState.Idle);
             }
             catch (ModelNotFoundException ex)

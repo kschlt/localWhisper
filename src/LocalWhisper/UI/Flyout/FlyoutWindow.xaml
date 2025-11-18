@@ -1,0 +1,62 @@
+<Window x:Class="LocalWhisper.UI.Flyout.FlyoutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="LocalWhisper Notification"
+        Width="320"
+        Height="90"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        ShowActivated="False">
+
+    <Border Background="#F0F0F0"
+            BorderBrush="#CCCCCC"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="15">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" Opacity="0.3" Direction="270" ShadowDepth="3" BlurRadius="10"/>
+        </Border.Effect>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Icon -->
+            <Ellipse x:Name="IconBackground"
+                     Grid.Column="0"
+                     Width="40"
+                     Height="40"
+                     Fill="#4CAF50"
+                     VerticalAlignment="Center"
+                     HorizontalAlignment="Center"
+                     Margin="0,0,12,0"/>
+
+            <Path x:Name="Icon"
+                  Grid.Column="0"
+                  Data="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+                  Fill="White"
+                  Stretch="Uniform"
+                  Width="20"
+                  Height="20"
+                  VerticalAlignment="Center"
+                  HorizontalAlignment="Center"
+                  Margin="0,0,12,0"/>
+
+            <!-- Message Text -->
+            <TextBlock x:Name="MessageText"
+                       Grid.Column="1"
+                       Text="Transkript im Clipboard"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Foreground="#333333"/>
+        </Grid>
+    </Border>
+</Window>
