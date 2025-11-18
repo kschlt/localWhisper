@@ -43,6 +43,7 @@ public partial class SettingsWindow : Window
 
     // Validators
     private readonly DataRootValidator _dataRootValidator = new();
+    private readonly ModelValidator _modelValidator = new();
 
     /// <summary>
     /// Initialize Settings window with current configuration.
@@ -97,8 +98,21 @@ public partial class SettingsWindow : Window
             LanguageEnglish.IsChecked = true;
         }
 
-        // File Format - Will add in Stage 3
-        // Model - Will add in Stage 3
+        // File Format
+        if (_currentFileFormat == ".md")
+        {
+            FileFormatMarkdown.IsChecked = true;
+        }
+        else if (_currentFileFormat == ".txt")
+        {
+            FileFormatTxt.IsChecked = true;
+        }
+
+        // Model
+        if (!string.IsNullOrEmpty(_currentModelPath))
+        {
+            ModelPathText.Text = $"Pfad: {_currentModelPath}";
+        }
     }
 
     /// <summary>
@@ -235,6 +249,138 @@ public partial class SettingsWindow : Window
         }
 
         UpdateSaveButtonState();
+    }
+
+    // =============================================================================
+    // EVENT HANDLERS - FILE FORMAT SECTION
+    // =============================================================================
+
+    /// <summary>
+    /// Handle file format radio button checked event.
+    /// </summary>
+    private void FileFormatRadioButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender == FileFormatMarkdown && FileFormatMarkdown.IsChecked == true)
+        {
+            _currentFileFormat = ".md";
+            AppLogger.LogDebug("File format changed to Markdown");
+        }
+        else if (sender == FileFormatTxt && FileFormatTxt.IsChecked == true)
+        {
+            _currentFileFormat = ".txt";
+            AppLogger.LogDebug("File format changed to Plain Text");
+        }
+
+        UpdateSaveButtonState();
+    }
+
+    // =============================================================================
+    // EVENT HANDLERS - MODEL SECTION
+    // =============================================================================
+
+    /// <summary>
+    /// Handle "Prüfen" button click for model verification.
+    /// </summary>
+    private async void VerifyModelButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(_currentModelPath))
+        {
+            MessageBox.Show(
+                "Kein Modell konfiguriert.",
+                "Info",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information
+            );
+            return;
+        }
+
+        // Disable button during verification
+        VerifyModelButton.IsEnabled = false;
+        ModelStatusText.Text = "⏳ Verifiziere Modell...";
+        ModelStatusText.Foreground = System.Windows.Media.Brushes.Gray;
+        ModelStatusText.Visibility = Visibility.Visible;
+
+        try
+        {
+            // For now, just do a quick file existence check
+            // TODO: Add SHA-1 hash verification with progress dialog in Stage 4
+            var isValid = _modelValidator.QuickValidate(_currentModelPath);
+
+            if (isValid)
+            {
+                ModelStatusText.Text = "✓ Modell OK";
+                ModelStatusText.Foreground = System.Windows.Media.Brushes.Green;
+                AppLogger.LogInformation("Model verification successful", new { ModelPath = _currentModelPath });
+            }
+            else
+            {
+                ModelStatusText.Text = "⚠ Modell ungültig oder zu klein";
+                ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                AppLogger.LogWarning("Model verification failed", new { ModelPath = _currentModelPath });
+            }
+        }
+        catch (Exception ex)
+        {
+            ModelStatusText.Text = $"⚠ Fehler: {ex.Message}";
+            ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+            AppLogger.LogError("Model verification error", ex, new { ModelPath = _currentModelPath });
+        }
+        finally
+        {
+            VerifyModelButton.IsEnabled = true;
+        }
+
+        // Small delay for visual feedback
+        await Task.Delay(500);
+    }
+
+    /// <summary>
+    /// Handle "Ändern..." button click for model file selection.
+    /// </summary>
+    private void ChangeModelButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Whisper Modell wählen",
+            Filter = "Whisper Model Files (*.bin)|*.bin|All Files (*.*)|*.*",
+            CheckFileExists = true
+        };
+
+        // Set initial directory if current path exists
+        if (!string.IsNullOrEmpty(_currentModelPath) && File.Exists(_currentModelPath))
+        {
+            dialog.InitialDirectory = Path.GetDirectoryName(_currentModelPath);
+        }
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            SetModelPath(dialog.FileName);
+        }
+    }
+
+    /// <summary>
+    /// Set model path and update UI.
+    /// </summary>
+    public void SetModelPath(string path)
+    {
+        if (File.Exists(path))
+        {
+            _currentModelPath = path;
+            ModelPathText.Text = $"Pfad: {path}";
+            ModelStatusText.Visibility = Visibility.Collapsed;
+
+            AppLogger.LogInformation("Model path changed", new { NewPath = path });
+            UpdateSaveButtonState();
+        }
+        else
+        {
+            MessageBox.Show(
+                $"Datei nicht gefunden:\n{path}",
+                "Fehler",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error
+            );
+        }
     }
 
     // =============================================================================

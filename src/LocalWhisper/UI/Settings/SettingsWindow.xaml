@@ -126,9 +126,67 @@
                     </StackPanel>
                 </Border>
 
-                <!-- FILE FORMAT SECTION - Will add in Stage 3 -->
+                <!-- FILE FORMAT SECTION -->
+                <Border BorderBrush="#D1D1D1" BorderThickness="0,0,0,1" Padding="0,0,0,20" Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="Dateiformat / File Format" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
 
-                <!-- MODEL SECTION - Will add in Stage 3 -->
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton x:Name="FileFormatMarkdown"
+                                         Content="Markdown (.md)"
+                                         GroupName="FileFormat"
+                                         Margin="0,0,20,0"
+                                         Checked="FileFormatRadioButton_Checked"/>
+                            <RadioButton x:Name="FileFormatTxt"
+                                         Content="Plain Text (.txt)"
+                                         GroupName="FileFormat"
+                                         Checked="FileFormatRadioButton_Checked"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- MODEL SECTION -->
+                <Border BorderBrush="#D1D1D1" BorderThickness="0,0,0,1" Padding="0,0,0,20" Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="Whisper Modell" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                        <!-- Model Path Display -->
+                        <TextBlock x:Name="ModelPathText"
+                                   Text="Pfad: (kein Modell konfiguriert)"
+                                   Foreground="#666666"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+
+                        <!-- Buttons -->
+                        <StackPanel Orientation="Horizontal">
+                            <Button x:Name="VerifyModelButton"
+                                    Content="Prüfen"
+                                    Width="100"
+                                    Height="30"
+                                    Background="#0078D4"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Margin="0,0,10,0"
+                                    Click="VerifyModelButton_Click"/>
+                            <Button x:Name="ChangeModelButton"
+                                    Content="Ändern..."
+                                    Width="100"
+                                    Height="30"
+                                    Background="#0078D4"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Click="ChangeModelButton_Click"/>
+                        </StackPanel>
+
+                        <!-- Model Status -->
+                        <TextBlock x:Name="ModelStatusText"
+                                   Margin="0,10,0,0"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Visibility="Collapsed"/>
+                    </StackPanel>
+                </Border>
 
             </StackPanel>
         </ScrollViewer>
