@@ -24,6 +24,7 @@ public class ClipboardWriter
 {
     private const int DefaultMaxRetries = 1;
     private const int DefaultRetryDelayMs = 100;
+    private const int CLIPBRD_E_CANT_OPEN = unchecked((int)0x800401D0); // COM error: clipboard locked
 
     /// <summary>
     /// Write text to clipboard with retry logic.
@@ -62,7 +63,7 @@ public class ClipboardWriter
 
                 return; // Success
             }
-            catch (COMException ex) when (ex.HResult == unchecked((int)0x800401D0)) // CLIPBRD_E_CANT_OPEN
+            catch (COMException ex) when (ex.HResult == CLIPBRD_E_CANT_OPEN)
             {
                 lastException = ex;
                 attempt++;

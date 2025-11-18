@@ -25,6 +25,7 @@ namespace LocalWhisper.Utils;
 public static class SlugGenerator
 {
     private const string DefaultSlug = "transcript";
+    private const double MinTruncationRatio = 0.5; // Prefer truncation in latter half of slug
 
     /// <summary>
     /// Generate a URL-safe slug from text.
@@ -139,7 +140,7 @@ public static class SlugGenerator
         var truncated = text.Substring(0, maxLength);
         var lastHyphen = truncated.LastIndexOf('-');
 
-        if (lastHyphen > 0 && lastHyphen > maxLength / 2) // Only break at hyphen if it's in the latter half
+        if (lastHyphen > 0 && lastHyphen > maxLength * MinTruncationRatio) // Only break at hyphen if it's in the latter half
         {
             return truncated.Substring(0, lastHyphen);
         }
