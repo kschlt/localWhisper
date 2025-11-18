@@ -161,14 +161,11 @@ public class ModelValidatorTests : IDisposable
     }
 
     [Fact]
-    public async Task ValidateAsync_KnownWhisperModelHash_ValidatesCorrectly()
+    public async Task ValidateAsync_DummyFileWithRealModelHash_ReturnsFalse()
     {
         // Arrange - Test with actual ggml-small.bin hash from documentation
-        // We simulate the file content to match the hash for testing purposes
-        var knownHash = "55356645c2b361a969dfd0ef2c5a50d530afd8d5"; // ggml-small.bin
-
-        // For this test, we create a dummy file and verify the validator would return false
-        // (since we can't include the real 466 MB model in tests)
+        // Create a dummy file that does NOT match the real model
+        var knownHash = "55356645c2b361a969dfd0ef2c5a50d530afd8d5"; // Real ggml-small.bin hash
         var testFile = CreateTestFileWithContent("Not the real model");
 
         // Act

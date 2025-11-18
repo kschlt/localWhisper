@@ -141,6 +141,69 @@ public class ModelDownloaderTests : IDisposable
     }
 
     [Fact]
+    public async Task DownloadAsync_ExponentialBackoff_UsesCorrectDelays()
+    {
+        // Arrange - Track retry timestamps to verify exponential backoff (1s, 2s, 4s)
+        var retryTimestamps = new List<DateTime>();
+        var testContent = "Test model content";
+        var testContentBytes = System.Text.Encoding.UTF8.GetBytes(testContent);
+        var expectedHash = ComputeSHA1(testContentBytes);
+
+        var httpMessageHandler = new Mock<HttpMessageHandler>();
+        httpMessageHandler
+            .Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() =>
+            {
+                retryTimestamps.Add(DateTime.Now);
+
+                if (retryTimestamps.Count < 3)
+                {
+                    // Fail first 2 attempts
+                    throw new HttpRequestException("Network error");
+                }
+
+                // Succeed on 3rd attempt
+                return new HttpResponseMessage
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    Content = new ByteArrayContent(testContentBytes)
+                };
+            });
+
+        var httpClient = new HttpClient(httpMessageHandler.Object);
+        var downloader = new ModelDownloader(httpClient);
+
+        var model = new ModelDefinition
+        {
+            Name = "small",
+            FileName = "ggml-small.bin",
+            SHA1 = expectedHash,
+            DownloadURL = "https://example.com/ggml-small.bin"
+        };
+
+        var destinationPath = Path.Combine(_testDirectory, "ggml-small.bin");
+        var progress = new Progress<DownloadProgress>();
+
+        // Act
+        await downloader.DownloadAsync(model, destinationPath, progress, CancellationToken.None);
+
+        // Assert - Verify exponential backoff timing (1s, 2s)
+        retryTimestamps.Should().HaveCount(3, "should have 3 attempts total");
+
+        // Delay between attempt 1 and 2 should be ~1000ms
+        var delay1 = (retryTimestamps[1] - retryTimestamps[0]).TotalMilliseconds;
+        delay1.Should().BeInRange(900, 1200, "first retry delay should be ~1000ms (1s)");
+
+        // Delay between attempt 2 and 3 should be ~2000ms
+        var delay2 = (retryTimestamps[2] - retryTimestamps[1]).TotalMilliseconds;
+        delay2.Should().BeInRange(1800, 2400, "second retry delay should be ~2000ms (2s)");
+    }
+
+    [Fact]
     public async Task DownloadAsync_AllRetriesFail_ThrowsModelDownloadException()
     {
         // Arrange - Fail all 3 attempts

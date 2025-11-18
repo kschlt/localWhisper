@@ -184,6 +184,31 @@ public class DataRootValidatorTests : IDisposable
         result.Errors.Should().HaveCountGreaterOrEqualTo(2, "both config.toml and model file are missing");
     }
 
+    [Fact(Skip = "Requires Windows elevation or specific filesystem support")]
+    public void Validate_SymbolicLinkDataRoot_HandlesCorrectly()
+    {
+        // Arrange - Test handling of symbolic links / junction points (common when folders are moved)
+        // Note: Creating symbolic links on Windows requires admin rights or developer mode
+        // This test documents expected behavior
+
+        var actualDataRoot = CreateValidDataRoot();
+        var config = CreateTestConfig(actualDataRoot);
+
+        // In real scenario: mklink /J link_path actual_path
+        // For now, document expected behavior:
+        // - Validator should follow symlink and validate target
+        // - Should return valid if target is valid
+
+        // Act
+        var result = _validator.Validate(actualDataRoot, config);
+
+        // Assert
+        result.IsValid.Should().BeTrue("should handle symbolic links correctly");
+
+        // TODO: If symbolic link support is critical, implement test with admin rights
+        // or mock filesystem abstraction
+    }
+
     // Helper methods
 
     private string CreateValidDataRoot()
