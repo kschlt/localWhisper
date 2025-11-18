@@ -78,8 +78,11 @@ include_frontmatter = true  # Only applies to .md files
 
 [postprocessing]
 enabled = false  # true | false
-llm_cli_path = ""  # Path to optional LLM CLI tool
-glossary_file = "${data_root}\\config\\glossary.txt"  # Optional
+llm_cli_path = "C:\\Program Files\\LocalWhisper\\llama\\llama-cli.exe"  # Path to llama-cli.exe (auto-set during wizard)
+llm_model_path = "${data_root}\\models\\llama-3.2-3b-q4.gguf"  # Path to GGUF model file
+llm_model_hash_sha256 = "6c1a2b41161032677be168d354123594c0e6e67d2b9227c84f296ad037c728ff"  # Expected SHA-256 hash for verification
+timeout_ms = 5000  # Timeout for LLM invocation in milliseconds (5 seconds default)
+use_gpu = true  # Auto-detected during wizard; set to false to force CPU-only mode
 
 [autostart]
 enabled = false  # REMOVED for v0.1; kept in schema for future compatibility
@@ -103,6 +106,8 @@ max_file_size_mb = 10
 - `history.file_format` → `"md"`
 - `history.include_frontmatter` → `true`
 - `postprocessing.enabled` → `false`
+- `postprocessing.timeout_ms` → `5000`
+- `postprocessing.use_gpu` → `true` (auto-detected)
 - `logging.level` → `"INFO"`
 - `logging.max_file_size_mb` → `10`
 
