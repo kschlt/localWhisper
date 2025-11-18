@@ -121,6 +121,26 @@ public class WhisperConfig
             throw new InvalidOperationException("Whisper model path must be specified.");
         }
 
+        if (string.IsNullOrWhiteSpace(Language))
+        {
+            throw new InvalidOperationException("Whisper language code must be specified.");
+        }
+
+        // Validate language code (common ISO 639-1 codes supported by Whisper)
+        var validLanguages = new HashSet<string>
+        {
+            "de", "en", "fr", "es", "it", "pt", "nl", "pl", "ru",
+            "zh", "ja", "ko", "ar", "tr", "sv", "da", "no", "fi"
+        };
+
+        if (!validLanguages.Contains(Language.ToLowerInvariant()))
+        {
+            throw new InvalidOperationException(
+                $"Invalid language code: '{Language}'. " +
+                $"Supported: {string.Join(", ", validLanguages.OrderBy(x => x))}"
+            );
+        }
+
         if (TimeoutSeconds <= 0)
         {
             throw new InvalidOperationException("Whisper timeout must be greater than 0 seconds.");

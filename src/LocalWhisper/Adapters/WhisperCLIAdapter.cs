@@ -85,6 +85,18 @@ public class WhisperCLIAdapter
             IsEmpty = result.IsEmpty
         });
 
+        // Clean up JSON file after successful parsing
+        try
+        {
+            File.Delete(outputJsonPath);
+            AppLogger.LogInformation("Cleaned up STT output file", new { OutputFile = outputJsonPath });
+        }
+        catch (Exception ex)
+        {
+            // Best effort cleanup - log but don't fail
+            AppLogger.LogWarning("Failed to delete STT output file", new { OutputFile = outputJsonPath, Error = ex.Message });
+        }
+
         return result;
     }
 
