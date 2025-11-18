@@ -1222,6 +1222,194 @@ Feature: Settings Validation
     And the user can retry or cancel
 ```
 
+## US-057: Settings - Hotkey Capture Enhancement
+
+```gherkin
+@Iter-6 @Enhancement @FR-010 @Priority-Medium
+Feature: In-Place Hotkey Capture
+  As a user
+  I want to capture my hotkey directly in the field
+  So that I can quickly change it without dialogs
+
+  Background:
+    Given the Settings window is open
+    And the current hotkey is "Ctrl+Shift+D"
+
+  @WindowsOnly @Manual
+  Scenario: User captures new hotkey in-place
+    When the user clicks "Ändern..." button
+    Then the hotkey field should enter capture mode
+    And show placeholder "Drücke Tastenkombination..." in gray
+    And the background should change to light yellow
+    When the user presses "Ctrl"
+    Then the field should display "Ctrl" in real-time
+    When the user presses "Shift" (while holding Ctrl)
+    Then the field should display "Ctrl+Shift" in real-time
+    When the user presses "V" (while holding Ctrl+Shift)
+    Then the field should display "Ctrl+Shift+V"
+    And exit capture mode automatically (white background)
+    And the Save button should be enabled
+
+  @WindowsOnly @Manual
+  Scenario: User tries to capture forbidden system hotkey
+    Given the hotkey field is in capture mode
+    When the user presses "Ctrl+Alt+Del"
+    Then a warning should appear "⚠ Hotkey bereits belegt durch Systemfunktion"
+    And the field should remain in capture mode (allow retry)
+    And the Save button should remain enabled (warning, not error)
+
+  @WindowsOnly @Manual
+  Scenario: User cancels hotkey capture with Esc
+    Given the hotkey field is in capture mode
+    And the placeholder shows "Drücke Tastenkombination..."
+    When the user presses Esc
+    Then the field should exit capture mode
+    And display the original hotkey "Ctrl+Shift+D"
+    And the background should return to white
+
+  @WindowsOnly @Manual
+  Scenario: User tries invalid hotkey (no modifier)
+    Given the hotkey field is in capture mode
+    When the user presses just "D" (no modifiers)
+    Then the keypress should be ignored
+    And the field should remain in capture mode
+    And no text should be displayed (still shows placeholder)
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Hotkey conflict detection immediate
+    Given the hotkey field is in capture mode
+    When the user captures "Ctrl+C" (common conflict)
+    Then conflict detection should run immediately
+    And show warning "⚠ Hotkey bereits belegt durch andere Anwendung"
+    And the field should exit capture mode with new hotkey displayed
+    And the user can try again by clicking "Ändern..."
+```
+
+## US-058: Settings - SHA-1 Model Verification Enhancement
+
+```gherkin
+@Iter-6 @Enhancement @FR-017 @Priority-Low
+Feature: Background SHA-1 Hash Verification
+  As a user
+  I want my model file verified in the background
+  So that I know it's not corrupted
+
+  Background:
+    Given the Settings window is open
+    And a model file "ggml-small.bin" (461 MB) is configured
+
+  @WindowsOnly @Manual
+  Scenario: User verifies model file integrity
+    When the user clicks "Prüfen"
+    Then the button should be disabled
+    And the status should show "⏳ Verifiziere Modell..."
+    And the status text should be gray
+    When verification completes after ~8 seconds
+    Then the status should show "✓ Modell OK"
+    And the status text should be green
+    And the button should be re-enabled
+
+  @WindowsOnly @Manual
+  Scenario: Model verification fails (file not found)
+    Given the model file has been deleted
+    When the user clicks "Prüfen"
+    Then the status should show "⏳ Verifiziere Modell..."
+    When verification completes
+    Then the status should show "⚠ Modell nicht gefunden oder beschädigt"
+    And the status text should be red
+    And the button should be re-enabled
+
+  @WindowsOnly @Manual
+  Scenario: Model auto-verified when changed
+    When the user clicks "Ändern..." button
+    And selects a new model file "ggml-medium.bin"
+    Then verification should start automatically
+    And the status should show "⏳ Verifiziere Modell..."
+    When verification completes successfully
+    Then the status should show "✓ Modell OK"
+    And the Save button should be enabled (change detected)
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Verification runs asynchronously (UI responsive)
+    Given verification is in progress
+    When the user moves the Settings window
+    Then the window should move smoothly (no freeze)
+    And the status should continue showing "⏳ Verifiziere Modell..."
+```
+
+## US-059: Settings - Keyboard Shortcuts Enhancement
+
+```gherkin
+@Iter-6 @Enhancement @UX @Priority-Low
+Feature: Keyboard Shortcuts for Settings Window
+  As a power user
+  I want keyboard shortcuts
+  So that I can navigate efficiently
+
+  Background:
+    Given the Settings window is open
+
+  @WindowsOnly @Manual
+  Scenario: User saves settings with Enter key
+    Given the user has changed the language to "English"
+    And the Save button is enabled
+    When the user presses Enter
+    Then the Save button should be triggered
+    And the config should be saved
+    And the restart dialog should appear
+
+  @WindowsOnly @Manual
+  Scenario: Enter does nothing when Save disabled
+    Given the user has made no changes
+    And the Save button is disabled
+    When the user presses Enter
+    Then nothing should happen (no error)
+    And the Settings window should remain open
+
+  @WindowsOnly @Manual
+  Scenario: User cancels settings with Esc key
+    Given the user has changed file format to ".txt"
+    When the user presses Esc
+    Then a confirmation dialog should appear: "Änderungen verwerfen?"
+    When the user confirms "Ja"
+    Then the Settings window should close
+    And the config should NOT be changed
+
+  @WindowsOnly @Manual
+  Scenario: Esc closes immediately with no changes
+    Given the user has made no changes
+    When the user presses Esc
+    Then the Settings window should close immediately
+    And no confirmation dialog should appear
+
+  @WindowsOnly @Manual
+  Scenario: Alt+S triggers Save button
+    Given the user has made changes
+    When the user presses Alt+S
+    Then the Save button should be activated
+    And the save process should start
+
+  @WindowsOnly @Manual
+  Scenario: Alt+A triggers Cancel button
+    Given the user has made changes
+    When the user presses Alt+A
+    Then the Cancel button should be activated
+    And the confirmation dialog should appear
+
+  @WindowsOnly @Manual
+  Scenario: Alt+D triggers Browse data root
+    When the user presses Alt+D
+    Then the folder browser dialog should open
+    And the user can select a new data root
+
+  @WindowsOnly @Manual
+  Scenario: Alt+P triggers Model verification
+    Given a model is configured
+    When the user presses Alt+P
+    Then the "Prüfen" button should be activated
+    And verification should start
+```
+
 ---
 
 # ITERATION 7: Optional Post-Processing
