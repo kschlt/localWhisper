@@ -1,6 +1,8 @@
 using System.Windows;
+using Ookii.Dialogs.Wpf;
 using LocalWhisper.Core;
 using LocalWhisper.Models;
+using LocalWhisper.Services;
 
 namespace LocalWhisper.UI.Settings;
 
@@ -37,6 +39,10 @@ public partial class SettingsWindow : Window
 
     // Validation state
     private bool _hasHotkeyConflict;
+    private bool _hasDataRootError;
+
+    // Validators
+    private readonly DataRootValidator _dataRootValidator = new();
 
     /// <summary>
     /// Initialize Settings window with current configuration.
@@ -78,8 +84,19 @@ public partial class SettingsWindow : Window
         // Hotkey
         HotkeyTextBox.Text = _currentHotkey;
 
-        // Data Root - Will add in Stage 2
-        // Language - Will add in Stage 2
+        // Data Root
+        DataRootTextBox.Text = _currentDataRoot;
+
+        // Language
+        if (_currentLanguage == "de")
+        {
+            LanguageGerman.IsChecked = true;
+        }
+        else if (_currentLanguage == "en")
+        {
+            LanguageEnglish.IsChecked = true;
+        }
+
         // File Format - Will add in Stage 3
         // Model - Will add in Stage 3
     }
@@ -108,7 +125,7 @@ public partial class SettingsWindow : Window
     /// <summary>
     /// Check if there are any validation errors.
     /// </summary>
-    public bool HasValidationErrors => _hasHotkeyConflict; // Will expand in later stages
+    public bool HasValidationErrors => _hasHotkeyConflict || _hasDataRootError;
 
     /// <summary>
     /// Update Save button state based on changes and validation.
@@ -127,7 +144,7 @@ public partial class SettingsWindow : Window
     /// </summary>
     private void ChangeHotkeyButton_Click(object sender, RoutedEventArgs e)
     {
-        // TODO: Implement hotkey capture dialog (Stage 1b)
+        // TODO: Implement hotkey capture dialog (Stage 4)
         // For now, show a simple input dialog
         MessageBox.Show(
             "Hotkey-Änderung wird in der nächsten Phase implementiert.",
@@ -135,6 +152,89 @@ public partial class SettingsWindow : Window
             MessageBoxButton.OK,
             MessageBoxImage.Information
         );
+    }
+
+    // =============================================================================
+    // EVENT HANDLERS - DATA ROOT SECTION
+    // =============================================================================
+
+    /// <summary>
+    /// Handle "Durchsuchen" button click for data root selection.
+    /// </summary>
+    private void BrowseDataRootButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new VistaFolderBrowserDialog
+        {
+            Description = "Wählen Sie den LocalWhisper Datenordner",
+            UseDescriptionForTitle = true,
+            Multiselect = false
+        };
+
+        // Set initial directory if current path exists
+        if (!string.IsNullOrEmpty(_currentDataRoot) && Directory.Exists(_currentDataRoot))
+        {
+            dialog.SelectedPath = _currentDataRoot;
+        }
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            var selectedPath = dialog.SelectedPath;
+            SetDataRoot(selectedPath);
+        }
+    }
+
+    /// <summary>
+    /// Set data root path and validate.
+    /// </summary>
+    public void SetDataRoot(string path)
+    {
+        // Validate path
+        var result = _dataRootValidator.ValidateStructure(path);
+
+        if (result.IsValid)
+        {
+            _currentDataRoot = path;
+            DataRootTextBox.Text = path;
+            DataRootErrorText.Visibility = Visibility.Collapsed;
+            _hasDataRootError = false;
+
+            AppLogger.LogInformation("Data root changed", new { NewPath = path });
+        }
+        else
+        {
+            // Show error
+            var errorMessage = string.Join(", ", result.Errors);
+            DataRootErrorText.Text = $"⚠ {errorMessage}";
+            DataRootErrorText.Visibility = Visibility.Visible;
+            _hasDataRootError = true;
+
+            AppLogger.LogWarning("Invalid data root selected", new { Path = path, Errors = errorMessage });
+        }
+
+        UpdateSaveButtonState();
+    }
+
+    // =============================================================================
+    // EVENT HANDLERS - LANGUAGE SECTION
+    // =============================================================================
+
+    /// <summary>
+    /// Handle language radio button checked event.
+    /// </summary>
+    private void LanguageRadioButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender == LanguageGerman && LanguageGerman.IsChecked == true)
+        {
+            _currentLanguage = "de";
+            AppLogger.LogDebug("Language changed to German");
+        }
+        else if (sender == LanguageEnglish && LanguageEnglish.IsChecked == true)
+        {
+            _currentLanguage = "en";
+            AppLogger.LogDebug("Language changed to English");
+        }
+
+        UpdateSaveButtonState();
     }
 
     // =============================================================================

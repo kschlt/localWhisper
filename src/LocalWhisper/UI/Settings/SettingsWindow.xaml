@@ -65,9 +65,66 @@
                     </StackPanel>
                 </Border>
 
-                <!-- DATA ROOT SECTION - Will add in Stage 2 -->
+                <!-- DATA ROOT SECTION -->
+                <Border BorderBrush="#D1D1D1" BorderThickness="0,0,0,1" Padding="0,0,0,20" Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="Datenordner / Data Root" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
 
-                <!-- LANGUAGE SECTION - Will add in Stage 2 -->
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Data Root TextBox (read-only display) -->
+                            <TextBox x:Name="DataRootTextBox"
+                                     Grid.Column="0"
+                                     IsReadOnly="True"
+                                     Height="30"
+                                     VerticalContentAlignment="Center"
+                                     Margin="0,0,10,0"
+                                     Background="#F3F3F3"/>
+
+                            <!-- Browse Button -->
+                            <Button x:Name="BrowseDataRootButton"
+                                    Grid.Column="1"
+                                    Content="Durchsuchen"
+                                    Width="100"
+                                    Height="30"
+                                    Background="#0078D4"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Click="BrowseDataRootButton_Click"/>
+                        </Grid>
+
+                        <!-- Error Text -->
+                        <TextBlock x:Name="DataRootErrorText"
+                                   Margin="0,5,0,0"
+                                   Foreground="#E81123"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Visibility="Collapsed"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- LANGUAGE SECTION -->
+                <Border BorderBrush="#D1D1D1" BorderThickness="0,0,0,1" Padding="0,0,0,20" Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="Sprache / Language" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton x:Name="LanguageGerman"
+                                         Content="Deutsch"
+                                         GroupName="Language"
+                                         Margin="0,0,20,0"
+                                         Checked="LanguageRadioButton_Checked"/>
+                            <RadioButton x:Name="LanguageEnglish"
+                                         Content="English"
+                                         GroupName="Language"
+                                         Checked="LanguageRadioButton_Checked"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
 
                 <!-- FILE FORMAT SECTION - Will add in Stage 3 -->
 
