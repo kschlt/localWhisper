@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
 using LocalWhisper.Core;
 
 namespace LocalWhisper.Services;
@@ -65,6 +66,22 @@ public class ModelValidator
             AppLogger.LogError("Model validation failed", ex, new { ModelPath = modelPath });
             return (false, $"Validation error: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Validate model file asynchronously by computing SHA-1 hash.
+    /// </summary>
+    /// <param name="modelPath">Path to model file</param>
+    /// <param name="expectedHash">Expected SHA-1 hash (hexadecimal string)</param>
+    /// <param name="progress">Optional progress callback (reports 0.0 to 1.0)</param>
+    /// <returns>True if validation successful, false otherwise</returns>
+    public async Task<bool> ValidateAsync(string modelPath, string expectedHash, IProgress<double>? progress = null)
+    {
+        return await Task.Run(() =>
+        {
+            var (isValid, _) = ValidateModel(modelPath, expectedHash, progress);
+            return isValid;
+        });
     }
 
     /// <summary>

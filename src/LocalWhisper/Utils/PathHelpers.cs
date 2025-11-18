@@ -76,4 +76,12 @@ public static class PathHelpers
     {
         return Path.Combine(dataRoot, "models");
     }
+
+    /// <summary>
+    /// Get the path to the tmp directory.
+    /// </summary>
+    public static string GetTmpPath(string dataRoot)
+    {
+        return Path.Combine(dataRoot, "tmp");
+    }
 }
