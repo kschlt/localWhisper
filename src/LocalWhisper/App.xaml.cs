@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Interop;
+using LocalWhisper.Adapters;
 using LocalWhisper.Core;
 using LocalWhisper.Models;
 using LocalWhisper.Services;
@@ -20,6 +21,7 @@ public partial class App : Application
     private TrayIconManager? _trayIconManager;
     private AppConfig? _config;
     private AudioRecorder? _audioRecorder;
+    private WhisperCLIAdapter? _whisperAdapter;
     private readonly SemaphoreSlim _recordingSemaphore = new SemaphoreSlim(1, 1);
 
     /// <summary>
@@ -53,6 +55,9 @@ public partial class App : Application
                 ShowMicrophoneUnavailableDialog();
                 // Continue running (allow user to fix issue and restart)
             }
+
+            // 4.5. Initialize Whisper CLI adapter (Iteration 3)
+            _whisperAdapter = new WhisperCLIAdapter(_config.Whisper);
 
             // 5. Initialize state machine
             _stateMachine = new StateMachine();
@@ -192,12 +197,85 @@ public partial class App : Application
                 return;
             }
 
-            // TODO(PH-002, Iter-3): Process with Whisper STT
-            AppLogger.LogInformation("WAV file ready for STT processing (placeholder)", new { WavFile = wavFilePath });
-            await Task.Delay(300); // Simulate STT processing
+            // Transcribe with Whisper CLI (US-020)
+            try
+            {
+                var sttResult = await _whisperAdapter!.TranscribeAsync(wavFilePath);
 
-            // Complete: Processing -> Idle
-            _stateMachine.TransitionTo(AppState.Idle);
+                if (sttResult.IsEmpty)
+                {
+                    AppLogger.LogInformation("No speech detected in recording");
+                    // TODO(Iter-4): Show flyout notification for empty result
+                }
+                else
+                {
+                    AppLogger.LogInformation("Transcription successful", new { Text = sttResult.Text, Language = sttResult.Language });
+                    // TODO(Iter-4): Write to clipboard and show in flyout
+                }
+
+                // Complete: Processing -> Idle
+                _stateMachine.TransitionTo(AppState.Idle);
+            }
+            catch (ModelNotFoundException ex)
+            {
+                AppLogger.LogError("Whisper model not found", ex);
+                _stateMachine.TransitionTo(AppState.Idle);
+
+                Dispatcher.Invoke(() =>
+                {
+                    var errorDialog = new ErrorDialog(
+                        title: "Whisper-Modell nicht gefunden",
+                        message: $"Das konfigurierte Whisper-Modell wurde nicht gefunden.\\n\\nBitte prüfen Sie die Einstellungen.\\n\\nDetails: {ex.Message}",
+                        iconType: ErrorIconType.Error
+                    );
+                    errorDialog.ShowDialog();
+                });
+            }
+            catch (STTTimeoutException ex)
+            {
+                AppLogger.LogError("STT timeout", ex);
+                _stateMachine.TransitionTo(AppState.Idle);
+
+                Dispatcher.Invoke(() =>
+                {
+                    var errorDialog = new ErrorDialog(
+                        title: "Transkription zu langsam",
+                        message: $"Die Spracherkennung hat zu lange gedauert und wurde abgebrochen.\\n\\nDetails: {ex.Message}",
+                        iconType: ErrorIconType.Warning
+                    );
+                    errorDialog.ShowDialog();
+                });
+            }
+            catch (InvalidAudioException ex)
+            {
+                AppLogger.LogError("Invalid audio for STT", ex);
+                _stateMachine.TransitionTo(AppState.Idle);
+
+                Dispatcher.Invoke(() =>
+                {
+                    var errorDialog = new ErrorDialog(
+                        title: "Ungültige Audiodatei",
+                        message: $"Die Audiodatei konnte nicht verarbeitet werden.\\n\\nDetails: {ex.Message}",
+                        iconType: ErrorIconType.Error
+                    );
+                    errorDialog.ShowDialog();
+                });
+            }
+            catch (STTException ex)
+            {
+                AppLogger.LogError("STT error", ex);
+                _stateMachine.TransitionTo(AppState.Idle);
+
+                Dispatcher.Invoke(() =>
+                {
+                    var errorDialog = new ErrorDialog(
+                        title: "Spracherkennungsfehler",
+                        message: $"Fehler bei der Spracherkennung:\\n\\n{ex.Message}",
+                        iconType: ErrorIconType.Error
+                    );
+                    errorDialog.ShowDialog();
+                });
+            }
         }
         catch (Exception ex)
         {

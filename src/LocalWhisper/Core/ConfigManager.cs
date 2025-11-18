@@ -10,6 +10,7 @@ namespace LocalWhisper.Core;
 /// </summary>
 /// <remarks>
 /// Iteration 1: Minimal config schema ([hotkey] section only).
+/// Iteration 3: Added [whisper] section for STT configuration.
 /// Iteration 5: Full schema with all sections.
 ///
 /// TODO(PH-003, Iter-5): Expand to full schema
@@ -53,8 +54,21 @@ public static class ConfigManager
                 };
             }
 
+            // Parse [whisper] section (Iteration 3)
+            if (tomlTable.ContainsKey("whisper") && tomlTable["whisper"] is TomlTable whisperTable)
+            {
+                config.Whisper = new WhisperConfig
+                {
+                    CLIPath = ParseString(whisperTable, "cli_path", "whisper-cli"),
+                    ModelPath = ParseString(whisperTable, "model_path", ""),
+                    Language = ParseString(whisperTable, "language", "de"),
+                    TimeoutSeconds = ParseInt(whisperTable, "timeout_seconds", 60)
+                };
+            }
+
             // Validate configuration
             config.Hotkey.Validate();
+            config.Whisper.Validate();
 
             AppLogger.LogInformation("Config loaded successfully", new { ConfigPath = configPath });
             return config;
@@ -75,6 +89,7 @@ public static class ConfigManager
     {
         // Validate before saving
         config.Hotkey.Validate();
+        config.Whisper.Validate();
 
         // Build TomlArray from modifiers list
         var modifiersArray = new TomlArray();
@@ -90,6 +105,13 @@ public static class ConfigManager
             {
                 ["modifiers"] = modifiersArray,
                 ["key"] = config.Hotkey.Key
+            },
+            ["whisper"] = new TomlTable
+            {
+                ["cli_path"] = config.Whisper.CLIPath,
+                ["model_path"] = config.Whisper.ModelPath,
+                ["language"] = config.Whisper.Language,
+                ["timeout_seconds"] = config.Whisper.TimeoutSeconds
             }
         };
 
@@ -120,6 +142,13 @@ public static class ConfigManager
             {
                 Modifiers = new List<string> { "Ctrl", "Shift" },
                 Key = "D"
+            },
+            Whisper = new WhisperConfig
+            {
+                CLIPath = "whisper-cli",
+                ModelPath = "",
+                Language = "de",
+                TimeoutSeconds = 60
             }
         };
     }
@@ -158,5 +187,21 @@ public static class ConfigManager
         }
 
         return table[key] is string str ? str : defaultValue;
+    }
+
+    private static int ParseInt(TomlTable table, string key, int defaultValue)
+    {
+        if (!table.ContainsKey(key))
+        {
+            return defaultValue;
+        }
+
+        // TOML integers are stored as long
+        if (table[key] is long longValue)
+        {
+            return (int)longValue;
+        }
+
+        return defaultValue;
     }
 }
