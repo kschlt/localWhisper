@@ -115,7 +115,7 @@ Iteration 1 (Hotkey & State) ✅
 
 ## User Stories (All Iterations)
 
-**Total:** ~30 user stories
+**Total:** ~45 user stories
 
 | Iteration | Story IDs | Count | Status |
 |-----------|-----------|-------|--------|
@@ -125,7 +125,7 @@ Iteration 1 (Hotkey & State) ✅
 | 4 | US-030..036 | 7 | ✅ Complete |
 | 5a | US-040, US-041a, US-042, US-045, US-046 | 5 | 📋 Ready |
 | 5b | US-041b, US-043, US-044 | 3 | 📋 Planned |
-| 6 | US-050..053 | 4 | 📋 Planned |
+| 6 | US-050..059 | 10 | 📋 Ready |
 | 7 | US-060..062 | 3 | 📋 Planned |
 | 8 | US-070..076 | 7 | 📋 Planned |
 

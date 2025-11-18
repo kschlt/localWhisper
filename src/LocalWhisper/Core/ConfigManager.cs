@@ -12,8 +12,8 @@ namespace LocalWhisper.Core;
 /// Iteration 1: Minimal config schema ([hotkey] section only).
 /// Iteration 3: Added [whisper] section for STT configuration.
 /// Iteration 5: Full schema with all sections.
+/// Iteration 6: Expanded schema for Settings (data_root, language, file_format).
 ///
-/// TODO(PH-003, Iter-5): Expand to full schema
 /// See: docs/meta/placeholders-tracker.md (PH-003)
 /// See: docs/specification/data-structures.md (lines 49-110)
 /// </remarks>
@@ -54,6 +54,15 @@ public static class ConfigManager
                 };
             }
 
+            // Parse data_root (Iteration 6)
+            config.DataRoot = ParseString(tomlTable, "data_root", string.Empty);
+
+            // Parse language (Iteration 6) - UI language
+            config.Language = ParseString(tomlTable, "language", "de");
+
+            // Parse file_format (Iteration 6)
+            config.FileFormat = ParseString(tomlTable, "file_format", ".md");
+
             // Parse [whisper] section (Iteration 3)
             if (tomlTable.ContainsKey("whisper") && tomlTable["whisper"] is TomlTable whisperTable)
             {
@@ -68,7 +77,10 @@ public static class ConfigManager
 
             // Validate configuration
             config.Hotkey.Validate();
-            config.Whisper.Validate();
+            if (config.Whisper != null)
+            {
+                config.Whisper.Validate();
+            }
 
             AppLogger.LogInformation("Config loaded successfully", new { ConfigPath = configPath });
             return config;
@@ -89,7 +101,10 @@ public static class ConfigManager
     {
         // Validate before saving
         config.Hotkey.Validate();
-        config.Whisper.Validate();
+        if (config.Whisper != null)
+        {
+            config.Whisper.Validate();
+        }
 
         // Build TomlArray from modifiers list
         var modifiersArray = new TomlArray();
@@ -105,15 +120,32 @@ public static class ConfigManager
             {
                 ["modifiers"] = modifiersArray,
                 ["key"] = config.Hotkey.Key
-            },
-            ["whisper"] = new TomlTable
+            }
+        };
+
+        // Add data_root (Iteration 6)
+        if (!string.IsNullOrEmpty(config.DataRoot))
+        {
+            tomlTable["data_root"] = config.DataRoot;
+        }
+
+        // Add language (Iteration 6) - UI language
+        tomlTable["language"] = config.Language;
+
+        // Add file_format (Iteration 6)
+        tomlTable["file_format"] = config.FileFormat;
+
+        // Add [whisper] section (Iteration 3)
+        if (config.Whisper != null)
+        {
+            tomlTable["whisper"] = new TomlTable
             {
                 ["cli_path"] = config.Whisper.CLIPath,
                 ["model_path"] = config.Whisper.ModelPath,
                 ["language"] = config.Whisper.Language,
                 ["timeout_seconds"] = config.Whisper.TimeoutSeconds
-            }
-        };
+            };
+        }
 
         // Serialize to TOML string
         var tomlContent = Toml.FromModel(tomlTable);
@@ -143,6 +175,9 @@ public static class ConfigManager
                 Modifiers = new List<string> { "Ctrl", "Shift" },
                 Key = "D"
             },
+            DataRoot = string.Empty,
+            Language = "de",
+            FileFormat = ".md",
             Whisper = new WhisperConfig
             {
                 CLIPath = "whisper-cli",

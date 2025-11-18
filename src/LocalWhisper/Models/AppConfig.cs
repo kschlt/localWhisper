@@ -7,8 +7,8 @@ namespace LocalWhisper.Models;
 /// Iteration 1: Minimal schema (hotkey only).
 /// Iteration 3: Added Whisper STT configuration.
 /// Iteration 5: Full schema (paths, history, postprocessing, logging).
+/// Iteration 6: Expanded schema for Settings (data_root, language, file_format).
 ///
-/// TODO(PH-003, Iter-5): Expand to full schema
 /// See: docs/meta/placeholders-tracker.md (PH-003)
 /// See: docs/specification/data-structures.md (lines 49-110)
 /// </remarks>
@@ -20,9 +20,25 @@ public class AppConfig
     public HotkeyConfig Hotkey { get; set; } = new();
 
     /// <summary>
+    /// Data root directory path.
+    /// Contains subdirectories: config/, models/, history/, logs/, tmp/
+    /// </summary>
+    public string DataRoot { get; set; } = string.Empty;
+
+    /// <summary>
+    /// UI language code ("de" or "en").
+    /// </summary>
+    public string Language { get; set; } = "de";
+
+    /// <summary>
+    /// History file format (".md" or ".txt").
+    /// </summary>
+    public string FileFormat { get; set; } = ".md";
+
+    /// <summary>
     /// Whisper STT configuration (Iteration 3).
     /// </summary>
-    public WhisperConfig Whisper { get; set; } = new();
+    public WhisperConfig? Whisper { get; set; }
 
     // Future iterations will add:
     // public AppMetadata App { get; set; } = new();

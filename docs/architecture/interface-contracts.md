@@ -146,56 +146,292 @@ whisper-cli.exe --model "C:\Data\models\ggml-small-de.gguf" --language de --outp
 
 ---
 
-## Post-Processor CLI Contract (Optional)
+## Post-Processor CLI Contract (llama.cpp)
+
+**Version:** v1 (Iteration 7)
+**Executable:** `llama-cli.exe` (from llama.cpp project)
+**Location:** `<APP_DIR>\llama\llama-cli.exe` (auto-downloaded during wizard)
+**Model:** Llama 3.2 3B Instruct (GGUF, Q4_K_M quantization)
+
+---
 
 ### Command-Line Invocation
 
-**Executable:** User-configured (e.g., `llama-cli.exe`, `ollama.exe`)
-**Location:** Configured in `config.toml` (`postprocessing.llm_cli_path`)
-
-**Command Format:**
+**Full Command:**
 ```bash
-<llm_cli> --prompt <prompt_file> < <input_text_file>
+llama-cli.exe \
+  -m "<DATA_ROOT>\models\llama-3.2-3b-q4.gguf" \
+  -sys "<SYSTEM_PROMPT>" \
+  -p "<TRANSCRIPT>" \
+  -n 512 \
+  --temp 0.0 \
+  --top-p 0.25 \
+  --repeat-penalty 1.05 \
+  -t <CPU_CORES> \
+  -ngl 99 \
+  --log-disable
 ```
 
-**Input:** Transcript text via **stdin** (UTF-8)
-**Output:** Formatted text via **stdout** (UTF-8)
+**Parameters:**
 
-**Prompt (embedded or file):**
+| Parameter | Required | Description | Value |
+|-----------|----------|-------------|-------|
+| `-m, --model` | Yes | Path to GGUF model file | `<DATA_ROOT>\models\llama-3.2-3b-q4.gguf` |
+| `-sys, --system-prompt` | Yes | System instruction for model | Plain Text or Markdown prompt (see below) |
+| `-p, --prompt` | Yes | User input (transcript text) | Cleaned transcript (trigger stripped) |
+| `-n, --predict` | Yes | Max tokens to generate | `512` (hardcoded) |
+| `--temp` | Yes | Temperature (creativity) | `0.0` (deterministic) |
+| `--top-p` | Yes | Nucleus sampling threshold | `0.25` (low creativity) |
+| `--repeat-penalty` | Yes | Penalize repeated tokens | `1.05` (slight penalty) |
+| `-t, --threads` | Yes | CPU threads for computation | `Environment.ProcessorCount` |
+| `-ngl, --gpu-layers` | Yes | GPU layers to offload | `99` (all layers if GPU available) |
+| `--log-disable` | Yes | Disable logging output | (flag only, no value) |
+
+---
+
+### System Prompts
+
+**Plain Text Mode (Default):**
 ```
-Format the following text for readability:
+You are a careful transcript formatter. Your task:
 - Fix punctuation and capitalization
-- Format lists as bullet points
-- Apply glossary substitutions (if provided)
-- DO NOT change the meaning
+- Expand common abbreviations (e.g., "asap" → "as soon as possible")
+- Improve readability while preserving exact meaning
+- DO NOT add new content or change the intent
+- Output only the formatted text, no explanations
 
-Text:
+Keep it concise and natural.
 ```
 
-**Example Command:**
-```bash
-echo "lets meet at 3pm asap fyi i checked the kb" | llama-cli.exe --prompt "fix punctuation, expand abbreviations: asap=as soon as possible, fyi=for your information, kb=knowledge base"
+**Markdown Mode (Triggered by "markdown mode" in transcript):**
 ```
+You are a formatter that converts speech transcripts into well-structured Markdown.
+- Use headings (## for sections, ### for subsections)
+- Format lists as - bullet points or 1. numbered lists
+- Use **bold** for emphasis, *italic* for terms
+- Preserve exact meaning, don't add new content
+- Output only the Markdown, no explanations
 
-**Expected Output:**
-```
-Let's meet at 3pm, as soon as possible. For your information, I checked the knowledge base.
+Keep structure clear and logical.
 ```
 
 ---
 
-### Adapter Behavior
+### Example Invocations
 
-1. **Prepare input:** Write transcript text to stdin
-2. **Invoke CLI:** Launch process with prompt
-3. **Capture output:** Read stdout
-4. **Timeout:** 10 seconds (shorter than STT timeout)
-5. **Fallback:** If exit code ≠ 0 or timeout, use original STT text
-6. **Validation:** Ensure output length is reasonable (< 2x input length; prevent runaway generation)
+**Plain Text Mode:**
+```bash
+llama-cli.exe -m "C:\Data\models\llama-3.2-3b-q4.gguf" \
+  -sys "You are a careful transcript formatter. Fix punctuation, capitalization, and expand common abbreviations. DO NOT change the meaning." \
+  -p "lets meet at 3pm asap fyi i checked the kb" \
+  -n 512 --temp 0.0 --top-p 0.25 --repeat-penalty 1.05 -t 8 -ngl 99 --log-disable
+```
 
-**Error Handling:**
-- Log error, use original text, show warning flyout: "Post-Processing fehlgeschlagen (Fallback: Original-Text)"
-- Do not block clipboard write
+**Expected stdout:**
+```
+llama_print_timings:        load time =     234.56 ms
+llama_print_timings:      sample time =      12.34 ms /   50 tokens
+llama_print_timings: eval time =     456.78 ms /   30 tokens
+
+Let's meet at 3pm, as soon as possible. For your information, I checked the knowledge base.
+```
+
+**Markdown Mode:**
+```bash
+llama-cli.exe -m "C:\Data\models\llama-3.2-3b-q4.gguf" \
+  -sys "You are a formatter that converts speech transcripts into Markdown. Use headings, lists, bold for emphasis." \
+  -p "okay I want three sections first overview then requirements then next steps" \
+  -n 512 --temp 0.0 --top-p 0.25 --repeat-penalty 1.05 -t 8 -ngl 99 --log-disable
+```
+
+**Expected stdout (after cleanup):**
+```markdown
+## Overview
+[content]
+
+## Requirements
+[content]
+
+## Next Steps
+[content]
+```
+
+---
+
+### Output Format
+
+**Raw stdout:**
+llama-cli outputs timing information followed by the generated text:
+
+```
+llama_print_timings:        load time =     234.56 ms
+llama_print_timings:      sample time =      12.34 ms /   50 tokens (  0.25 ms per token)
+llama_print_timings: eval time =     456.78 ms /   30 tokens (  15.23 ms per token)
+
+Let's meet at 3pm, as soon as possible.
+```
+
+**Parsing Algorithm:**
+1. Capture stdout as string
+2. Split into lines
+3. Filter out lines starting with `llama_` (case insensitive)
+4. Join remaining lines with spaces
+5. Trim whitespace
+
+**Implementation:**
+```csharp
+private string CleanLlamaOutput(string rawOutput)
+{
+    var lines = rawOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+    var textLines = lines
+        .Where(line => !line.TrimStart().StartsWith("llama_", StringComparison.OrdinalIgnoreCase))
+        .Where(line => !string.IsNullOrWhiteSpace(line));
+
+    return string.Join(" ", textLines).Trim();
+}
+```
+
+---
+
+### Exit Codes
+
+| Exit Code | Meaning | Adapter Action |
+|-----------|---------|----------------|
+| `0` | Success | Parse stdout, strip metadata, return text |
+| `1` | General error | Parse stderr, log error, fallback to original transcript |
+| Other | Undefined | Log stderr, fallback to original transcript |
+
+**stderr Patterns:**
+
+| stderr Contains | Meaning | Action |
+|-----------------|---------|--------|
+| `failed to load model` | Model file not found or corrupt | Log error, fallback, suggest model re-download |
+| `CUDA error` or `out of memory` | GPU OOM | Log warning, **retry with `-ngl 0`** (CPU fallback) |
+| `invalid argument` | Bad command-line parameters | Log error (bug in adapter), fallback |
+
+**GPU Fallback Strategy:**
+If first invocation fails with CUDA error:
+1. Log warning: "GPU error detected, retrying with CPU"
+2. Retry same command with `-ngl 0` (force CPU-only)
+3. If still fails: Fallback to original transcript
+
+---
+
+### Timeout Enforcement
+
+**Timeout:** 5000ms (5 seconds, configurable in `config.toml`)
+
+**Implementation:**
+```csharp
+using var timeoutCts = new CancellationTokenSource(TimeSpan.FromMilliseconds(_timeoutMs));
+using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(externalCt, timeoutCts.Token);
+
+Process process = new Process { /* StartInfo setup */ };
+process.Start();
+
+try
+{
+    await process.WaitForExitAsync(linkedCts.Token);
+}
+catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
+{
+    Log.Warning("LLM process timeout after {Timeout}ms", _timeoutMs);
+    process.Kill(entireProcessTree: true); // Kill child processes too
+    return originalTranscript; // Fallback
+}
+```
+
+**If timeout reached:**
+- Kill process (including child processes)
+- Log warning: "Post-processing timeout after {Timeout}ms"
+- Return original transcript (no error dialog)
+
+---
+
+### Error Handling & Fallback
+
+**Adapter Behavior:**
+
+1. **Invoke llama-cli** with transcript
+2. **Wait with timeout** (5s default)
+3. **Check exit code:**
+   - `0` → Parse stdout, strip metadata, return text
+   - Non-zero → Parse stderr, log error, **fallback to original transcript**
+4. **Timeout reached:**
+   - Kill process
+   - Log warning
+   - **Fallback to original transcript**
+5. **Validation:**
+   - If cleaned output is empty → Fallback
+   - If output > 2x input length → Log warning, **still use output** (user intended verbose formatting)
+
+**Fallback Contract:**
+- ✅ Always preserve original STT text
+- ✅ No error dialogs (silent fallback, log only)
+- ✅ Optional: Show transient flyout "Post-Processing nicht verfügbar (Original-Text verwendet)"
+
+**Consecutive Failure Handling:**
+- After **3 consecutive failures**, disable post-processing automatically
+- Show dialog: "Post-Processing wurde nach mehreren Fehlern deaktiviert. Bitte prüfen Sie die Logs."
+- User can re-enable in Settings
+
+---
+
+### Model File Verification
+
+**Location:** `<DATA_ROOT>\models\llama-3.2-3b-q4.gguf`
+
+**Expected File:**
+- **SHA-256:** `6c1a2b41161032677be168d354123594c0e6e67d2b9227c84f296ad037c728ff`
+- **Size:** 2,168,659,968 bytes (2.02 GB)
+- **Source:** https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF
+
+**Verification (during wizard or settings):**
+1. Compute SHA-256 hash of file
+2. Compare against expected hash
+3. If mismatch: "Modell ungültig oder beschädigt. Bitte erneut herunterladen."
+4. If missing: Offer to download during wizard
+
+---
+
+### Distribution: llama-cli.exe Download
+
+**Source:** https://github.com/ggml-org/llama.cpp/releases
+
+**Builds:**
+
+| Build | URL | Size | SHA-256 | Use Case |
+|-------|-----|------|---------|----------|
+| **CUDA 12.4** | `cudart-llama-bin-win-cuda-12.4-x64.zip` | 373 MB | `8c79a9b2...` | NVIDIA GPU (driver ≥ 531.14) |
+| **CPU-only** | `llama-bin-win-x64.zip` | ~100 MB | TBD | No GPU or fallback |
+
+**Download Strategy:**
+1. During wizard Step 2b (Post-Processing Setup):
+   - Detect NVIDIA GPU via WMI (`Win32_VideoController`)
+   - If NVIDIA found → Download CUDA build
+   - Else → Download CPU-only build
+2. Extract `llama-cli.exe` to `<APP_DIR>\llama\llama-cli.exe`
+3. Verify SHA-256 hash
+4. Test invocation: `llama-cli.exe --version`
+5. If success: ✓ Ready | If fail: Offer manual install
+
+**Fallback if download fails:**
+> "llama-cli.exe konnte nicht heruntergeladen werden. Bitte laden Sie es manuell von https://github.com/ggml-org/llama.cpp/releases herunter und platzieren Sie es unter `<APP_DIR>\llama\llama-cli.exe`."
+
+---
+
+### Related Documents
+
+- **ADR-0010:** LLM Post-Processing Architecture
+- **ADR-0010 Addendum:** Implementation details (GPU detection, output parsing, etc.)
+- **Data Structures:** `specification/data-structures.md` (config schema)
+- **Functional Requirements:** FR-022 (Post-Processing)
+
+---
+
+**Version History:**
+- **v1 (2025-11-18):** Initial specification (Iteration 7)
 
 ---
 

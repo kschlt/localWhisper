@@ -162,7 +162,7 @@ public partial class App : Application
             _stateMachine = new StateMachine();
 
             // 6. Initialize tray icon (must happen before hotkey for window handle)
-            _trayIconManager = new TrayIconManager(_stateMachine);
+            _trayIconManager = new TrayIconManager(_stateMachine, configPath, _dataRoot);
 
             // 7. Register hotkey
             RegisterHotkey();

@@ -1055,7 +1055,7 @@ Feature: Settings: Model Verification
   Scenario: User checks model integrity
     Given the Settings window is open
     When the user clicks "Modell prüfen"
-    Then the SHA-256 hash should be recomputed
+    Then the SHA-1 hash should be recomputed
     And if valid, a message should display "Modell OK ✓"
     And if invalid, a warning should display "Modell ungültig. Bitte neu herunterladen."
 
@@ -1066,6 +1066,348 @@ Feature: Settings: Model Verification
     Then the new model should be verified
     And if valid, config should be updated
     And no restart should be required (next transcription uses new model)
+```
+
+## US-054: Settings Window - Access and Navigation
+
+```gherkin
+@Iter-6 @FR-020 @Priority-High
+Feature: Settings Window Access
+  As a user
+  I want to access settings easily
+  So that I can configure the app
+
+  @WindowsOnly @Manual
+  Scenario: User opens Settings from tray menu
+    Given the app is running in the system tray
+    When the user right-clicks the tray icon
+    Then a menu should appear with options: "Einstellungen", "History", "Beenden"
+    When the user clicks "Einstellungen"
+    Then the Settings window should open
+    And the Settings window should be modal (blocks app interaction)
+    And the Settings window should be centered on screen
+
+  @WindowsOnly @Manual
+  Scenario: User opens history folder from tray menu
+    Given the app is running
+    When the user right-clicks the tray icon
+    And clicks "History"
+    Then Windows Explorer should open showing the history folder
+    And the path should be "<data_root>/history/"
+
+  @WindowsOnly @Manual
+  Scenario: Settings window shows current configuration
+    Given the current hotkey is "Ctrl+Shift+D"
+    And the data root is "C:\Users\...\LocalWhisper"
+    And the language is "de"
+    When the Settings window opens
+    Then all fields should display current values
+    And the Save button should be disabled (no changes yet)
+    And the version number "v0.1.0" should be displayed at bottom-left
+```
+
+## US-055: Settings - Save and Cancel Behavior
+
+```gherkin
+@Iter-6 @FR-020 @Priority-High
+Feature: Settings Save and Cancel
+  As a user
+  I want my changes saved correctly
+  So that my preferences persist
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Save button disabled until changes made
+    Given the Settings window is open
+    And no fields have been modified
+    Then the Save button should be disabled
+    When the user changes any field
+    Then the Save button should be enabled
+
+  @WindowsOnly @Manual
+  Scenario: User saves changes without restart requirement
+    Given the Settings window is open
+    When the user changes file format from ".md" to ".txt"
+    And clicks "Speichern"
+    Then the config.toml should be updated
+    And the Settings window should close immediately
+    And no restart dialog should appear
+
+  @WindowsOnly @Manual
+  Scenario: User saves changes requiring restart
+    Given the Settings window is open
+    When the user changes the hotkey to "Ctrl+Alt+D"
+    And clicks "Speichern"
+    Then the config should be saved
+    And a restart dialog should appear: "Einige Änderungen erfordern einen Neustart. Jetzt neu starten?"
+    When the user clicks "Ja"
+    Then the app should restart
+    When the user clicks "Nein"
+    Then the Settings window should close
+    And changes should be saved but not yet active
+
+  @WindowsOnly @Manual
+  Scenario: Multiple changes requiring restart
+    Given the Settings window is open
+    When the user changes hotkey, language, and data root
+    And clicks "Speichern"
+    Then ONE restart dialog should appear (not multiple)
+    And after restart, all changes should be active
+
+  @WindowsOnly @Manual
+  Scenario: User cancels with no changes
+    Given the Settings window is open
+    And no fields were modified
+    When the user clicks "Abbrechen"
+    Then the window should close immediately (no confirmation)
+
+  @WindowsOnly @Manual
+  Scenario: User cancels with unsaved changes
+    Given the Settings window is open
+    And the user changed the hotkey to "Ctrl+Alt+V"
+    When the user clicks "Abbrechen"
+    Then a confirmation dialog should appear: "Änderungen verwerfen?"
+    When the user clicks "Ja"
+    Then the Settings window should close
+    And the config should NOT be changed
+    When the user clicks "Nein"
+    Then the confirmation dialog should close
+    And the Settings window should remain open
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Save button disabled with validation errors
+    Given the Settings window is open
+    When the user selects an invalid data root path
+    Then the field should show a red error: "⚠ Pfad nicht gefunden"
+    And the Save button should be disabled
+    When the user fixes the validation error
+    Then the Save button should be enabled
+```
+
+## US-056: Settings - Validation and Error Handling
+
+```gherkin
+@Iter-6 @FR-020 @Priority-High
+Feature: Settings Validation
+  As a user
+  I want validation feedback
+  So that I don't save invalid settings
+
+  @WindowsOnly @Manual
+  Scenario: Invalid data root path validation
+    Given the Settings window is open
+    When the user clicks "Durchsuchen"
+    And selects a folder without valid structure (no config/, models/ subdirectories)
+    Then an error should display: "Dieser Ordner enthält keine gültige LocalWhisper-Installation"
+    And the path should not be updated
+    And the Save button should remain disabled
+
+  @WindowsOnly @Manual
+  Scenario: Data root validation on browse
+    Given the Settings window is open
+    When the user clicks "Durchsuchen"
+    And selects a folder with valid structure
+    Then the path should update immediately
+    And no error should be shown
+    And the Save button should be enabled (change detected)
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Config save failure handling
+    Given the Settings window is open
+    And the user makes valid changes
+    When the user clicks "Speichern"
+    And writing to config.toml fails (permissions error)
+    Then an error dialog should appear: "Fehler beim Speichern"
+    And the error message should be displayed
+    And the Settings window should remain open
+    And the user can retry or cancel
+```
+
+## US-057: Settings - Hotkey Capture Enhancement
+
+```gherkin
+@Iter-6 @Enhancement @FR-010 @Priority-Medium
+Feature: In-Place Hotkey Capture
+  As a user
+  I want to capture my hotkey directly in the field
+  So that I can quickly change it without dialogs
+
+  Background:
+    Given the Settings window is open
+    And the current hotkey is "Ctrl+Shift+D"
+
+  @WindowsOnly @Manual
+  Scenario: User captures new hotkey in-place
+    When the user clicks "Ändern..." button
+    Then the hotkey field should enter capture mode
+    And show placeholder "Drücke Tastenkombination..." in gray
+    And the background should change to light yellow
+    When the user presses "Ctrl"
+    Then the field should display "Ctrl" in real-time
+    When the user presses "Shift" (while holding Ctrl)
+    Then the field should display "Ctrl+Shift" in real-time
+    When the user presses "V" (while holding Ctrl+Shift)
+    Then the field should display "Ctrl+Shift+V"
+    And exit capture mode automatically (white background)
+    And the Save button should be enabled
+
+  @WindowsOnly @Manual
+  Scenario: User tries to capture forbidden system hotkey
+    Given the hotkey field is in capture mode
+    When the user presses "Ctrl+Alt+Del"
+    Then a warning should appear "⚠ Hotkey bereits belegt durch Systemfunktion"
+    And the field should remain in capture mode (allow retry)
+    And the Save button should remain enabled (warning, not error)
+
+  @WindowsOnly @Manual
+  Scenario: User cancels hotkey capture with Esc
+    Given the hotkey field is in capture mode
+    And the placeholder shows "Drücke Tastenkombination..."
+    When the user presses Esc
+    Then the field should exit capture mode
+    And display the original hotkey "Ctrl+Shift+D"
+    And the background should return to white
+
+  @WindowsOnly @Manual
+  Scenario: User tries invalid hotkey (no modifier)
+    Given the hotkey field is in capture mode
+    When the user presses just "D" (no modifiers)
+    Then the keypress should be ignored
+    And the field should remain in capture mode
+    And no text should be displayed (still shows placeholder)
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Hotkey conflict detection immediate
+    Given the hotkey field is in capture mode
+    When the user captures "Ctrl+C" (common conflict)
+    Then conflict detection should run immediately
+    And show warning "⚠ Hotkey bereits belegt durch andere Anwendung"
+    And the field should exit capture mode with new hotkey displayed
+    And the user can try again by clicking "Ändern..."
+```
+
+## US-058: Settings - SHA-1 Model Verification Enhancement
+
+```gherkin
+@Iter-6 @Enhancement @FR-017 @Priority-Low
+Feature: Background SHA-1 Hash Verification
+  As a user
+  I want my model file verified in the background
+  So that I know it's not corrupted
+
+  Background:
+    Given the Settings window is open
+    And a model file "ggml-small.bin" (461 MB) is configured
+
+  @WindowsOnly @Manual
+  Scenario: User verifies model file integrity
+    When the user clicks "Prüfen"
+    Then the button should be disabled
+    And the status should show "⏳ Verifiziere Modell..."
+    And the status text should be gray
+    When verification completes after ~8 seconds
+    Then the status should show "✓ Modell OK"
+    And the status text should be green
+    And the button should be re-enabled
+
+  @WindowsOnly @Manual
+  Scenario: Model verification fails (file not found)
+    Given the model file has been deleted
+    When the user clicks "Prüfen"
+    Then the status should show "⏳ Verifiziere Modell..."
+    When verification completes
+    Then the status should show "⚠ Modell nicht gefunden oder beschädigt"
+    And the status text should be red
+    And the button should be re-enabled
+
+  @WindowsOnly @Manual
+  Scenario: Model auto-verified when changed
+    When the user clicks "Ändern..." button
+    And selects a new model file "ggml-medium.bin"
+    Then verification should start automatically
+    And the status should show "⏳ Verifiziere Modell..."
+    When verification completes successfully
+    Then the status should show "✓ Modell OK"
+    And the Save button should be enabled (change detected)
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Verification runs asynchronously (UI responsive)
+    Given verification is in progress
+    When the user moves the Settings window
+    Then the window should move smoothly (no freeze)
+    And the status should continue showing "⏳ Verifiziere Modell..."
+```
+
+## US-059: Settings - Keyboard Shortcuts Enhancement
+
+```gherkin
+@Iter-6 @Enhancement @UX @Priority-Low
+Feature: Keyboard Shortcuts for Settings Window
+  As a power user
+  I want keyboard shortcuts
+  So that I can navigate efficiently
+
+  Background:
+    Given the Settings window is open
+
+  @WindowsOnly @Manual
+  Scenario: User saves settings with Enter key
+    Given the user has changed the language to "English"
+    And the Save button is enabled
+    When the user presses Enter
+    Then the Save button should be triggered
+    And the config should be saved
+    And the restart dialog should appear
+
+  @WindowsOnly @Manual
+  Scenario: Enter does nothing when Save disabled
+    Given the user has made no changes
+    And the Save button is disabled
+    When the user presses Enter
+    Then nothing should happen (no error)
+    And the Settings window should remain open
+
+  @WindowsOnly @Manual
+  Scenario: User cancels settings with Esc key
+    Given the user has changed file format to ".txt"
+    When the user presses Esc
+    Then a confirmation dialog should appear: "Änderungen verwerfen?"
+    When the user confirms "Ja"
+    Then the Settings window should close
+    And the config should NOT be changed
+
+  @WindowsOnly @Manual
+  Scenario: Esc closes immediately with no changes
+    Given the user has made no changes
+    When the user presses Esc
+    Then the Settings window should close immediately
+    And no confirmation dialog should appear
+
+  @WindowsOnly @Manual
+  Scenario: Alt+S triggers Save button
+    Given the user has made changes
+    When the user presses Alt+S
+    Then the Save button should be activated
+    And the save process should start
+
+  @WindowsOnly @Manual
+  Scenario: Alt+A triggers Cancel button
+    Given the user has made changes
+    When the user presses Alt+A
+    Then the Cancel button should be activated
+    And the confirmation dialog should appear
+
+  @WindowsOnly @Manual
+  Scenario: Alt+D triggers Browse data root
+    When the user presses Alt+D
+    Then the folder browser dialog should open
+    And the user can select a new data root
+
+  @WindowsOnly @Manual
+  Scenario: Alt+P triggers Model verification
+    Given a model is configured
+    When the user presses Alt+P
+    Then the "Prüfen" button should be activated
+    And verification should start
 ```
 
 ---

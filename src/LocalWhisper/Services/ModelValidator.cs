@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
 using LocalWhisper.Core;
 
 namespace LocalWhisper.Services;
@@ -15,83 +14,115 @@ namespace LocalWhisper.Services;
 /// - Compares against known-good hashes from whisper.cpp
 /// - Logs validation results
 ///
+/// Used in Settings window (US-053) and First-run wizard (US-040).
 /// Note: Uses SHA-1 (not SHA-256) to match whisper.cpp standard.
 ///
 /// See: docs/iterations/iteration-05a-wizard-core.md
+/// See: docs/iterations/iteration-06-settings.md (ModelVerificationTests section)
 /// See: docs/reference/whisper-models.md
 /// </remarks>
 public class ModelValidator
 {
     /// <summary>
-    /// Validate model file SHA-1 hash.
+    /// Validate model file by computing SHA-1 hash.
     /// </summary>
-    /// <param name="filePath">Path to model file</param>
-    /// <param name="expectedSHA1">Expected SHA-1 hash (lowercase hex)</param>
-    /// <returns>True if hash matches, false otherwise</returns>
-    public async Task<bool> ValidateAsync(string filePath, string expectedSHA1)
+    /// <param name="modelPath">Path to model file</param>
+    /// <param name="expectedHash">Expected SHA-1 hash (hexadecimal string)</param>
+    /// <param name="progress">Optional progress callback (reports 0.0 to 1.0)</param>
+    /// <returns>Tuple (isValid, message)</returns>
+    public (bool IsValid, string Message) ValidateModel(string modelPath, string expectedHash, IProgress<double>? progress = null)
     {
-        if (!File.Exists(filePath))
-        {
-            AppLogger.LogError("Model file not found", new { FilePath = filePath });
-            return false;
-        }
-
         try
         {
-            var startTime = DateTime.Now;
+            // Check file exists
+            if (!File.Exists(modelPath))
+            {
+                return (false, $"Model file not found: {modelPath}");
+            }
 
             // Compute SHA-1 hash
-            using var sha1 = SHA1.Create();
-            using var stream = File.OpenRead(filePath);
+            var computedHash = ComputeSha1(modelPath, progress);
 
-            var hashBytes = await sha1.ComputeHashAsync(stream);
-            var computedHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
-
-            var elapsed = DateTime.Now - startTime;
-            var matches = computedHash.Equals(expectedSHA1, StringComparison.OrdinalIgnoreCase);
-
-            AppLogger.LogInformation("Model hash validation completed", new
+            // Compare hashes (case-insensitive)
+            if (string.Equals(computedHash, expectedHash, StringComparison.OrdinalIgnoreCase))
             {
-                FilePath = filePath,
-                ComputedHash = computedHash,
-                ExpectedHash = expectedSHA1,
-                Matches = matches,
-                Duration_Ms = elapsed.TotalMilliseconds
-            });
-
-            return matches;
+                AppLogger.LogInformation("Model validation successful", new { ModelPath = modelPath, Hash = computedHash });
+                return (true, "Model hash matches expected value");
+            }
+            else
+            {
+                AppLogger.LogWarning("Model hash mismatch", new
+                {
+                    ModelPath = modelPath,
+                    Expected = expectedHash,
+                    Computed = computedHash
+                });
+                return (false, $"Model hash mismatch. Expected: {expectedHash}, Got: {computedHash}");
+            }
         }
         catch (Exception ex)
         {
-            AppLogger.LogError("Failed to compute model hash", ex, new { FilePath = filePath });
-            return false;
+            AppLogger.LogError("Model validation failed", ex, new { ModelPath = modelPath });
+            return (false, $"Validation error: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// Compute SHA-1 hash without validation (for display purposes).
+    /// Compute SHA-1 hash of a file.
     /// </summary>
-    /// <param name="filePath">Path to model file</param>
-    /// <returns>SHA-1 hash as lowercase hex string, or empty string on error</returns>
-    public async Task<string> ComputeSHA1Async(string filePath)
+    /// <param name="filePath">Path to file</param>
+    /// <param name="progress">Optional progress callback (reports 0.0 to 1.0)</param>
+    /// <returns>SHA-1 hash as hexadecimal string (lowercase)</returns>
+    private string ComputeSha1(string filePath, IProgress<double>? progress = null)
     {
-        if (!File.Exists(filePath))
+        using var sha1 = SHA1.Create();
+        using var stream = File.OpenRead(filePath);
+
+        var fileSize = stream.Length;
+        var buffer = new byte[81920]; // 80 KB buffer
+        long totalRead = 0;
+
+        while (true)
         {
-            return string.Empty;
+            var bytesRead = stream.Read(buffer, 0, buffer.Length);
+            if (bytesRead == 0)
+                break;
+
+            totalRead += bytesRead;
+
+            if (bytesRead == buffer.Length)
+            {
+                sha1.TransformBlock(buffer, 0, bytesRead, null, 0);
+            }
+            else
+            {
+                sha1.TransformFinalBlock(buffer, 0, bytesRead);
+            }
+
+            // Report progress
+            if (progress != null && fileSize > 0)
+            {
+                var progressPercent = (double)totalRead / fileSize;
+                progress.Report(progressPercent);
+            }
         }
 
-        try
-        {
-            using var sha1 = SHA1.Create();
-            using var stream = File.OpenRead(filePath);
+        var hash = sha1.Hash ?? Array.Empty<byte>();
+        return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+    }
 
-            var hashBytes = await sha1.ComputeHashAsync(stream);
-            return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
-        }
-        catch (Exception ex)
-        {
-            AppLogger.LogError("Failed to compute hash", ex, new { FilePath = filePath });
-            return string.Empty;
-        }
+    /// <summary>
+    /// Validate model file existence only (no hash check).
+    /// </summary>
+    /// <param name="modelPath">Path to model file</param>
+    /// <returns>True if file exists and has reasonable size</returns>
+    public bool QuickValidate(string modelPath)
+    {
+        if (!File.Exists(modelPath))
+            return false;
+
+        // Model files should be at least 10 MB (very small models)
+        var fileInfo = new FileInfo(modelPath);
+        return fileInfo.Length > 10 * 1024 * 1024;
     }
 }
