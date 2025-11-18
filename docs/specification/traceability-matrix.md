@@ -52,12 +52,12 @@
 
 ## Functional Requirements to Code Modules
 
-**Note:** Updated during implementation (Iteration 1 completed).
+**Note:** Updated during implementation (Iteration 2 completed).
 
 | FR ID | FR Title | Code Modules | Status |
 |-------|----------|--------------|--------|
 | FR-010 | Hotkey (Hold-to-Talk) | `Core/StateMachine.cs`, `Services/HotkeyManager.cs`, `Utils/Win32Interop.cs`, `Utils/IconResources.cs`, `UI/TrayIcon/TrayIconManager.cs`, `App.xaml.cs`, `Models/AppState.cs`, `Models/AppConfig.cs`, `Core/ConfigManager.cs` | **Implemented (Iter-1)** |
-| FR-011 | Audio Recording | TBD: `src/Services/AudioRecorder.cs` | Planned (Iter-2) |
+| FR-011 | Audio Recording | `Services/AudioRecorder.cs`, `Utils/WavValidator.cs`, `App.xaml.cs`, `Utils/PathHelpers.cs` | **Implemented (Iter-2)** |
 | FR-012 | STT with Whisper (CLI) | TBD: `src/Adapters/WhisperCLIAdapter.cs` | Planned (Iter-3) |
 | FR-013 | Clipboard Write | TBD: `src/Services/ClipboardService.cs` | Planned (Iter-4) |
 | FR-014 | History File | TBD: `src/Services/HistoryWriter.cs` | Planned (Iter-4) |
@@ -183,7 +183,7 @@
 
 ## Reverse Trace: Implementation to Requirements
 
-**Updated after Iteration 1:**
+**Updated after Iteration 2:**
 
 | Code Module | Purpose | Satisfies FRs | Related UC | Tests |
 |-------------|---------|---------------|------------|-------|
@@ -197,13 +197,14 @@
 | **Utils/PathHelpers.cs** | Data root path resolution & creation | FR-023 | All UCs | Manual inspection |
 | **Utils/IconResources.cs** | Segoe MDL2 icon/color mappings by state | FR-010 | UC-001 | Visual verification (tray icon) |
 | **Utils/Win32Interop.cs** | P/Invoke for RegisterHotKey, WM_HOTKEY | FR-010 | UC-001 | Integration test (manual) |
+| **Utils/WavValidator.cs** | WAV file format validation (16kHz, mono, 16-bit PCM) | FR-011 | UC-001 | `tests/Unit/WavValidatorTests.cs` (9 tests) |
 | **Services/HotkeyManager.cs** | Global hotkey registration with conflict detection | FR-010 | UC-001 | Manual test script T1-001, T1-005 |
+| **Services/AudioRecorder.cs** | NAudio-based audio recording (WASAPI) | FR-011 | UC-001 | `tests/Unit/AudioRecorderTests.cs` (9 tests) |
 | **UI/Dialogs/ErrorDialog.xaml** | Error dialog XAML layout | FR-021 | UC-001 | Manual test script T1-006 |
 | **UI/Dialogs/ErrorDialog.xaml.cs** | Error dialog code-behind (Warning/Error/Info types) | FR-021 | UC-001 | Manual test script T1-006 |
 | **UI/TrayIcon/TrayIconManager.cs** | Tray icon with state-based updates | FR-010 | UC-001 | Manual test script T1-002, T1-003 |
-| **App.xaml** | Application XAML definition | FR-010, FR-023 | UC-001 | Integration test (startup) |
-| **App.xaml.cs** | Application entry point, initialization, wiring | FR-010, FR-021, FR-023 | UC-001 | Manual test script T1-001..T1-008 |
-| **AudioRecorder.cs** | WASAPI recording | FR-011 | UC-001 | `features/AudioRecording.feature` @Iter-2 (TBD) |
+| **App.xaml** | Application XAML definition | FR-010, FR-011, FR-023 | UC-001 | Integration test (startup) |
+| **App.xaml.cs** | Application entry point, initialization, wiring | FR-010, FR-011, FR-021, FR-023 | UC-001 | Manual test script (TBD Iter-2) |
 | ... | ... | ... | ... | ... |
 
 ---
@@ -236,5 +237,5 @@
 ---
 
 **Last updated:** 2025-11-17
-**Version:** v0.1 (Iteration 1 complete - modules populated)
-**Next update:** After Iteration 2 (audio recording modules)
+**Version:** v0.1 (Iteration 2 complete - audio recording modules added)
+**Next update:** After Iteration 3 (STT integration modules)

@@ -1,0 +1,106 @@
+<Window x:Class="LocalWhisper.UI.Dialogs.RepairDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Datenordner nicht gefunden"
+        Width="550"
+        Height="350"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="White">
+
+    <Grid Margin="30">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Icon + Title -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
+            <TextBlock Text="⚠️"
+                      FontSize="32"
+                      Margin="0,0,15,0"/>
+            <TextBlock Text="Datenordner nicht gefunden"
+                      FontSize="18"
+                      FontWeight="SemiBold"
+                      VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Message -->
+        <TextBlock Grid.Row="1"
+                  x:Name="MessageText"
+                  TextWrapping="Wrap"
+                  Margin="0,0,0,10"
+                  Foreground="#333333"/>
+
+        <!-- Path Display -->
+        <Border Grid.Row="2"
+               Background="#F5F5F5"
+               BorderBrush="#E0E0E0"
+               BorderThickness="1"
+               Padding="10"
+               Margin="0,0,0,20">
+            <TextBlock x:Name="PathText"
+                      TextWrapping="Wrap"
+                      FontFamily="Consolas"
+                      Foreground="#666666"/>
+        </Border>
+
+        <!-- Error Details -->
+        <Border Grid.Row="3"
+               Background="#FFF3E0"
+               BorderBrush="#FFB74D"
+               BorderThickness="1"
+               Padding="10"
+               Margin="0,0,0,20">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Text="Mögliche Ursachen:"
+                              FontWeight="SemiBold"
+                              Margin="0,0,0,5"/>
+                    <TextBlock Text="• Ordner wurde verschoben oder gelöscht"
+                              Foreground="#666666"
+                              Margin="0,0,0,3"/>
+                    <TextBlock Text="• Externe Festplatte nicht verbunden"
+                              Foreground="#666666"
+                              Margin="0,0,0,3"/>
+                    <TextBlock Text="• Netzlaufwerk nicht verfügbar"
+                              Foreground="#666666"
+                              Margin="0,0,0,10"/>
+
+                    <TextBlock x:Name="ErrorDetailsText"
+                              Visibility="Collapsed"
+                              TextWrapping="Wrap"
+                              Foreground="#D84315"
+                              FontFamily="Consolas"
+                              FontSize="11"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="ChooseNewFolderButton"
+                   Content="Neuen Ordner wählen"
+                   Width="150"
+                   Height="35"
+                   Margin="0,0,10,0"
+                   Click="ChooseNewFolder_Click"/>
+
+            <Button x:Name="RunWizardButton"
+                   Content="Neu einrichten"
+                   Width="120"
+                   Height="35"
+                   Margin="0,0,10,0"
+                   Click="RunWizard_Click"/>
+
+            <Button x:Name="ExitButton"
+                   Content="Beenden"
+                   Width="80"
+                   Height="35"
+                   Click="Exit_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -25,37 +25,42 @@ This project is organized into **8 iterations**, each implementing a vertical sl
 
 | # | Focus | Key Deliverables | Effort | Status |
 |---|-------|------------------|--------|--------|
-| [1](iteration-01-hotkey-skeleton.md) | Hotkey & App Skeleton | Tray app, hotkey registration, state machine | 4-6h | Planned |
-| [2](iteration-02-audio-recording.md) | Audio Recording | WASAPI recording, WAV file generation | 4-6h | Planned |
-| [3](iteration-03-stt-whisper.md) | STT Integration | Whisper CLI adapter, JSON parsing | 6-8h | Planned |
-| [4](iteration-04-clipboard-history-flyout.md) | Clipboard + History + Flyout | End-to-end dictation flow complete | 6-10h | Planned |
-| [5](iteration-05-wizard-repair.md) | First-Run Wizard + Repair | Setup wizard, model verification | 8-12h | Planned |
-| [6](iteration-06-settings.md) | Settings UI | Configuration panel | 4-6h | Planned |
-| [7](iteration-07-post-processing.md) | Optional Post-Processing | LLM integration (optional) | 4-6h | Planned |
-| [8](iteration-08-stabilization-reset.md) | Stabilization + Reset + Logs | Error handling, reset, performance verification | 6-10h | Planned |
+| [1](iteration-01-hotkey-skeleton.md) | Hotkey & App Skeleton | Tray app, hotkey registration, state machine | 4-6h | ✅ Complete |
+| [2](iteration-02-audio-recording.md) | Audio Recording | WASAPI recording, WAV file generation | 4-6h | ✅ Complete |
+| [3](iteration-03-stt-whisper.md) | STT Integration | Whisper CLI adapter, JSON parsing | 6-8h | ✅ Complete |
+| [4](iteration-04-clipboard-history-flyout.md) | Clipboard + History + Flyout | End-to-end dictation flow complete | 6-10h | ✅ Complete |
+| [5a](iteration-05a-wizard-core.md) | Wizard Core (File Selection) | Wizard UI, model verification (SHA-1), hotkey picker | 4-6h | 📋 Ready |
+| [5b](iteration-05b-download-repair.md) | Download + Repair | HTTP download, progress tracking, repair flow | 4-6h | 📋 Planned |
+| [6](iteration-06-settings.md) | Settings UI | Configuration panel | 4-6h | 📋 Planned |
+| [7](iteration-07-post-processing.md) | Optional Post-Processing | LLM integration (optional) | 4-6h | 📋 Planned |
+| [8](iteration-08-stabilization-reset.md) | Stabilization + Reset + Logs | Error handling, reset, performance verification | 6-10h | 📋 Planned |
 
 **Total:** ~40-60 hours
+
+**Note:** Iteration 5 was split into 5a (wizard core) and 5b (download + repair) to keep iterations manageable (4-6h each).
 
 ---
 
 ## Dependency Graph
 
 ```
-Iteration 1 (Hotkey & State)
-  ├─→ Iteration 2 (Audio)
-  │     └─→ Iteration 3 (STT)
-  │           └─→ Iteration 4 (Clipboard/History/Flyout) ★ E2E Complete
-  │                 ├─→ Iteration 5 (Wizard/Repair)
-  │                 │     └─→ Iteration 6 (Settings)
-  │                 ├─→ Iteration 7 (Post-Processing)
-  │                 └─→ Iteration 8 (Stabilization) ★ v0.1 Release
+Iteration 1 (Hotkey & State) ✅
+  ├─→ Iteration 2 (Audio) ✅
+  │     └─→ Iteration 3 (STT) ✅
+  │           └─→ Iteration 4 (Clipboard/History/Flyout) ★ E2E Complete ✅
+  │                 ├─→ Iteration 5a (Wizard Core) 📋
+  │                 │     ├─→ Iteration 5b (Download/Repair) 📋
+  │                 │     └─→ Iteration 6 (Settings) 📋
+  │                 ├─→ Iteration 7 (Post-Processing) 📋
+  │                 └─→ Iteration 8 (Stabilization) ★ v0.1 Release 📋
   │
   └─→ [All iterations depend on Iteration 1 foundational work]
 
 ★ Major milestones
+✅ Complete | 📋 Planned
 ```
 
-**Critical Path:** 1 → 2 → 3 → 4 → 5 → 8
+**Critical Path:** 1 → 2 → 3 → 4 → 5a → 5b → 8
 
 ---
 
@@ -112,16 +117,19 @@ Iteration 1 (Hotkey & State)
 
 **Total:** ~30 user stories
 
-| Iteration | Story IDs | Count |
-|-----------|-----------|-------|
-| 1 | US-001, US-002, US-003 | 3 |
-| 2 | US-010, US-011, US-012 | 3 |
-| 3 | US-020, US-021, US-022, US-023 | 4 |
-| 4 | US-030..036 | 7 |
-| 5 | US-040..046 | 7 |
-| 6 | US-050..053 | 4 |
-| 7 | US-060..062 | 3 |
-| 8 | US-070..076 | 7 |
+| Iteration | Story IDs | Count | Status |
+|-----------|-----------|-------|--------|
+| 1 | US-001, US-002, US-003 | 3 | ✅ Complete |
+| 2 | US-010, US-011, US-012 | 3 | ✅ Complete |
+| 3 | US-020, US-021, US-022, US-023 | 4 | ✅ Complete |
+| 4 | US-030..036 | 7 | ✅ Complete |
+| 5a | US-040, US-041a, US-042, US-045, US-046 | 5 | 📋 Ready |
+| 5b | US-041b, US-043, US-044 | 3 | 📋 Planned |
+| 6 | US-050..053 | 4 | 📋 Planned |
+| 7 | US-060..062 | 3 | 📋 Planned |
+| 8 | US-070..076 | 7 | 📋 Planned |
+
+**Note:** US-041 was split into US-041a (file selection, Iteration 5a) and US-041b (HTTP download, Iteration 5b).
 
 ---
 
@@ -129,16 +137,17 @@ Iteration 1 (Hotkey & State)
 
 ### By Iteration
 
-| Iteration | FRs Covered | NFRs Verified |
-|-----------|-------------|---------------|
-| 1 | FR-010, FR-021, FR-023 | NFR-002, NFR-006 |
-| 2 | FR-011, FR-021, FR-023 | NFR-006 |
-| 3 | FR-012, FR-021, FR-023 | NFR-001 (partial), NFR-005, NFR-006 |
-| 4 | FR-013, FR-014, FR-015, FR-024, FR-023 | NFR-001, NFR-004, NFR-006 |
-| 5 | FR-016, FR-017, FR-021, FR-023 | NFR-002, NFR-004, NFR-006 |
-| 6 | FR-020, FR-017, FR-023 | NFR-006 |
-| 7 | FR-022, FR-023 | NFR-006 |
-| 8 | FR-019, FR-021, FR-023 | NFR-001 (final), NFR-003, NFR-004, NFR-006 |
+| Iteration | FRs Covered | NFRs Verified | Status |
+|-----------|-------------|---------------|--------|
+| 1 | FR-010, FR-021, FR-023 | NFR-002, NFR-006 | ✅ Complete |
+| 2 | FR-011, FR-021, FR-023 | NFR-006 | ✅ Complete |
+| 3 | FR-012, FR-021, FR-023 | NFR-001 (partial), NFR-005, NFR-006 | ✅ Complete |
+| 4 | FR-013, FR-014, FR-015, FR-024, FR-023 | NFR-001, NFR-004, NFR-006 | ✅ Complete |
+| 5a | FR-016, FR-017 (file selection), FR-021, FR-023 | NFR-006 | 📋 Ready |
+| 5b | FR-017 (download), FR-016 (repair), FR-021, FR-023 | NFR-004, NFR-006 | 📋 Planned |
+| 6 | FR-020, FR-017, FR-023 | NFR-006 | 📋 Planned |
+| 7 | FR-022, FR-023 | NFR-006 | 📋 Planned |
+| 8 | FR-019, FR-021, FR-023 | NFR-001 (final), NFR-003, NFR-004, NFR-006 | 📋 Planned |
 
 **Total Coverage:** All 14 FRs and 6 NFRs addressed.
 

@@ -1,9 +1,13 @@
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Interop;
+using LocalWhisper.Adapters;
 using LocalWhisper.Core;
 using LocalWhisper.Models;
 using LocalWhisper.Services;
 using LocalWhisper.UI.Dialogs;
+using LocalWhisper.UI.Flyout;
 using LocalWhisper.UI.TrayIcon;
 using LocalWhisper.Utils;
 
@@ -19,6 +23,11 @@ public partial class App : Application
     private HotkeyManager? _hotkeyManager;
     private TrayIconManager? _trayIconManager;
     private AppConfig? _config;
+    private AudioRecorder? _audioRecorder;
+    private WhisperCLIAdapter? _whisperAdapter;
+    private ClipboardWriter? _clipboardWriter;
+    private HistoryWriter? _historyWriter;
+    private readonly SemaphoreSlim _recordingSemaphore = new SemaphoreSlim(1, 1);
 
     /// <summary>
     /// Application startup handler.
@@ -27,12 +36,50 @@ public partial class App : Application
     {
         try
         {
-            // 1. Initialize data root
+            // 1. Determine default data root
             _dataRoot = PathHelpers.GetDataRoot();
-            PathHelpers.EnsureDataRootExists(_dataRoot);
+            var configPath = PathHelpers.GetConfigPath(_dataRoot);
 
-            // 2. Initialize logging
-            AppLogger.Initialize(_dataRoot);
+            // 2. Check if config exists (first-run vs existing installation)
+            if (!File.Exists(configPath))
+            {
+                // First run - show wizard
+                // NOTE: Initialize logging to temp location since data root doesn't exist yet
+                var tempLogPath = Path.Combine(Path.GetTempPath(), "LocalWhisper");
+                AppLogger.Initialize(tempLogPath);
+                AppLogger.LogInformation("First run detected - launching wizard");
+
+                var wizard = new UI.Wizard.WizardWindow();
+                var result = wizard.ShowDialog();
+
+                if (result != true)
+                {
+                    // User cancelled wizard
+                    AppLogger.LogInformation("Wizard cancelled - exiting");
+                    Shutdown(0);
+                    return;
+                }
+
+                // Wizard completed - update data root to wizard result
+                _dataRoot = wizard.DataRoot!;
+                configPath = PathHelpers.GetConfigPath(_dataRoot);
+
+                // Shutdown temp logging and reinitialize to actual data root
+                AppLogger.Shutdown();
+                AppLogger.Initialize(_dataRoot);
+
+                AppLogger.LogInformation("Wizard completed successfully", new
+                {
+                    DataRoot = _dataRoot
+                });
+            }
+            else
+            {
+                // Config exists - initialize logging normally
+                AppLogger.Initialize(_dataRoot);
+            }
+
+            // 3. Application startup logging
             AppLogger.LogInformation("Application started", new
             {
                 Version = "0.1.0",
@@ -40,20 +87,87 @@ public partial class App : Application
                 DataRoot = _dataRoot
             });
 
-            // 3. Load configuration
-            var configPath = PathHelpers.GetConfigPath(_dataRoot);
+            // 4. Load configuration
             _config = ConfigManager.Load(configPath);
 
-            // 4. Initialize state machine
+            // 5. Validate data root (repair flow - US-043)
+            var validator = new DataRootValidator();
+            var validationResult = validator.Validate(_dataRoot, _config);
+
+            if (!validationResult.IsValid)
+            {
+                AppLogger.LogWarning("Data root validation failed", new
+                {
+                    Errors = validationResult.Errors,
+                    Warnings = validationResult.Warnings
+                });
+
+                // Show repair dialog
+                var repairDialog = new UI.Dialogs.RepairDialog(_dataRoot, validationResult);
+                var repairResult = repairDialog.ShowDialog();
+
+                if (repairResult == true && repairDialog.NewDataRoot != null)
+                {
+                    // User re-linked to moved folder
+                    _dataRoot = repairDialog.NewDataRoot;
+                    configPath = PathHelpers.GetConfigPath(_dataRoot);
+                    _config = ConfigManager.Load(configPath);
+
+                    AppLogger.LogInformation("Data root relinked", new { NewPath = _dataRoot });
+                }
+                else if (repairDialog.ShouldRunWizard)
+                {
+                    // User chose to run wizard again
+                    var wizard = new UI.Wizard.WizardWindow();
+                    var wizardResult = wizard.ShowDialog();
+
+                    if (wizardResult != true)
+                    {
+                        AppLogger.LogInformation("Wizard cancelled from repair - exiting");
+                        Shutdown(0);
+                        return;
+                    }
+
+                    _dataRoot = wizard.DataRoot!;
+                    configPath = PathHelpers.GetConfigPath(_dataRoot);
+                    _config = ConfigManager.Load(configPath);
+
+                    AppLogger.LogInformation("Wizard completed from repair");
+                }
+                else
+                {
+                    // User chose to exit
+                    AppLogger.LogInformation("User exited from repair dialog");
+                    Shutdown(0);
+                    return;
+                }
+            }
+
+            // 4. Initialize audio recorder and check microphone availability
+            _audioRecorder = new AudioRecorder();
+            if (!_audioRecorder.IsMicrophoneAvailable())
+            {
+                ShowMicrophoneUnavailableDialog();
+                // Continue running (allow user to fix issue and restart)
+            }
+
+            // 4.5. Initialize Whisper CLI adapter (Iteration 3)
+            _whisperAdapter = new WhisperCLIAdapter(_config.Whisper);
+
+            // 4.6. Initialize clipboard and history writers (Iteration 4)
+            _clipboardWriter = new ClipboardWriter();
+            _historyWriter = new HistoryWriter();
+
+            // 5. Initialize state machine
             _stateMachine = new StateMachine();
 
-            // 5. Initialize tray icon (must happen before hotkey for window handle)
+            // 6. Initialize tray icon (must happen before hotkey for window handle)
             _trayIconManager = new TrayIconManager(_stateMachine);
 
-            // 6. Register hotkey
+            // 7. Register hotkey
             RegisterHotkey();
 
-            // 7. Wire hotkey events to state machine
+            // 8. Wire hotkey events to state machine
             WireHotkeyEvents();
 
             AppLogger.LogInformation("Application initialization complete");
@@ -104,35 +218,272 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Wire hotkey events to state machine (US-001).
+    /// Show microphone unavailable error dialog (US-012).
+    /// </summary>
+    private void ShowMicrophoneUnavailableDialog()
+    {
+        var dialog = new ErrorDialog(
+            title: "Kein Mikrofon gefunden",
+            message: "Bitte schließen Sie ein Mikrofon an oder prüfen Sie die Windows-Audioeinstellungen.",
+            iconType: ErrorIconType.Error
+        );
+
+        AppLogger.LogWarning("Microphone unavailable at startup");
+        dialog.ShowDialog();
+    }
+
+    /// <summary>
+    /// Wire hotkey events to state machine (US-001, US-010).
     /// </summary>
     private void WireHotkeyEvents()
     {
-        _hotkeyManager!.HotkeyPressed += async (s, e) =>
+        // Use synchronous handler that fires and forgets async work
+        _hotkeyManager!.HotkeyPressed += (s, e) =>
         {
-            // For Iteration 1: Simulate full state flow
-            // TODO(PH-002, Iter-3): Replace simulation with real audio/STT processing
+            // Fire and forget with proper error handling
+            _ = HandleHotkeyPressAsync();
+        };
+    }
 
-            if (_stateMachine!.State == AppState.Idle)
+    /// <summary>
+    /// Handle hotkey press asynchronously with proper error handling.
+    /// </summary>
+    private async Task HandleHotkeyPressAsync()
+    {
+        // Prevent concurrent recordings
+        if (!_recordingSemaphore.Wait(0))
+        {
+            AppLogger.LogWarning("Recording already in progress - ignoring hotkey");
+            return;
+        }
+
+        try
+        {
+            if (_stateMachine!.State != AppState.Idle)
             {
-                // Hotkey pressed: Idle -> Recording
-                _stateMachine.TransitionTo(AppState.Recording);
+                return; // Ignore hotkey if not idle
+            }
 
-                // Simulate recording (in real version, hold duration determines recording length)
-                await Task.Delay(100);
+            // Check microphone availability (US-012)
+            if (!_audioRecorder!.IsMicrophoneAvailable())
+            {
+                ShowMicrophoneUnavailableDialog();
+                return;
+            }
 
-                // Auto-transition: Recording -> Processing
-                _stateMachine.TransitionTo(AppState.Processing);
+            // Start recording: Idle -> Recording (US-010)
+            _stateMachine.TransitionTo(AppState.Recording);
 
-                // Simulate processing
-                AppLogger.LogInformation("Simulated processing started (no audio/STT yet)");
-                await Task.Delay(500); // Simulate STT processing time
-                AppLogger.LogInformation("Simulated processing complete");
+            var tmpPath = PathHelpers.GetTmpPath(_dataRoot!);
+            _audioRecorder.StartRecording(tmpPath);
 
-                // Complete: Processing -> Idle
+            // For Iteration 2: Record for fixed duration (500ms)
+            // TODO(Iter-3): Implement proper hold-to-talk with key-up detection
+            await Task.Delay(500);
+
+            // Stop recording: Recording -> Processing
+            _stateMachine.TransitionTo(AppState.Processing);
+            var wavFilePath = await _audioRecorder.StopRecordingAsync();
+
+            // Validate WAV file (US-011)
+            if (!WavValidator.ValidateWavFile(wavFilePath, out var errorMessage))
+            {
+                AppLogger.LogWarning("WAV file validation failed", new { Error = errorMessage });
+                WavValidator.MoveToFailedDirectory(wavFilePath);
+
+                // Return to idle
+                _stateMachine.TransitionTo(AppState.Idle);
+                return;
+            }
+
+            // Transcribe with Whisper CLI (US-020)
+            try
+            {
+                var sttResult = await _whisperAdapter!.TranscribeAsync(wavFilePath);
+
+                if (sttResult.IsEmpty)
+                {
+                    AppLogger.LogInformation("No speech detected in recording");
+                    FlyoutWindow.Show("Keine Sprache erkannt", FlyoutWindow.FlyoutType.Warning);
+                    _stateMachine.TransitionTo(AppState.Idle);
+                    return;
+                }
+
+                // Start E2E latency measurement (US-033)
+                var e2eStopwatch = Stopwatch.StartNew();
+
+                // 1. Write to clipboard (US-030)
+                var clipboardSuccess = false;
+                try
+                {
+                    var clipboardStopwatch = Stopwatch.StartNew();
+                    await _clipboardWriter!.WriteAsync(sttResult.Text);
+                    clipboardStopwatch.Stop();
+                    clipboardSuccess = true;
+
+                    AppLogger.LogInformation("Clipboard write succeeded", new
+                    {
+                        TextLength = sttResult.Text.Length,
+                        Clipboard_Write_Duration_Ms = clipboardStopwatch.ElapsedMilliseconds
+                    });
+                }
+                catch (ClipboardLockedException ex)
+                {
+                    AppLogger.LogError("Clipboard locked - cannot write", ex, new
+                    {
+                        RetryCount = ex.RetryCount
+                    });
+
+                    FlyoutWindow.Show("Zwischenablage gesperrt", FlyoutWindow.FlyoutType.Warning);
+                    // Continue to history write anyway
+                }
+
+                // 2. Write to history (US-031)
+                try
+                {
+                    var historyStopwatch = Stopwatch.StartNew();
+                    var historyEntry = new HistoryEntry
+                    {
+                        Created = DateTimeOffset.Now,
+                        Text = sttResult.Text,
+                        Language = sttResult.Language,
+                        SttModel = Path.GetFileName(_config!.Whisper.ModelPath),
+                        DurationSeconds = sttResult.DurationSeconds,
+                        PostProcessed = false
+                    };
+
+                    var historyPath = await _historyWriter!.WriteAsync(historyEntry, _dataRoot!);
+                    historyStopwatch.Stop();
+
+                    AppLogger.LogInformation("History file created", new
+                    {
+                        Path = historyPath,
+                        History_Write_Duration_Ms = historyStopwatch.ElapsedMilliseconds
+                    });
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.LogWarning("History write failed - continuing anyway", new
+                    {
+                        Error = ex.Message
+                    });
+                    // Do not block on history failure
+                }
+
+                // 3. Show flyout notification (US-032)
+                e2eStopwatch.Stop();
+                AppLogger.LogInformation("E2E dictation completed", new
+                {
+                    E2E_Latency_Ms = e2eStopwatch.ElapsedMilliseconds,
+                    TranscriptLength = sttResult.Text.Length,
+                    ClipboardSuccess = clipboardSuccess
+                });
+
+                var flyoutStopwatch = Stopwatch.StartNew();
+                if (clipboardSuccess)
+                {
+                    FlyoutWindow.Show("Transkript im Clipboard", FlyoutWindow.FlyoutType.Success);
+                }
+                else
+                {
+                    FlyoutWindow.Show("Transkript gespeichert (Clipboard fehlgeschlagen)", FlyoutWindow.FlyoutType.Warning);
+                }
+                flyoutStopwatch.Stop();
+
+                AppLogger.LogInformation("Flyout displayed", new
+                {
+                    Flyout_Display_Latency_Ms = flyoutStopwatch.ElapsedMilliseconds
+                });
+
+                // 4. Return to idle
                 _stateMachine.TransitionTo(AppState.Idle);
             }
-        };
+            catch (ModelNotFoundException ex)
+            {
+                AppLogger.LogError("Whisper model not found", ex);
+                _stateMachine.TransitionTo(AppState.Idle);
+
+                Dispatcher.Invoke(() =>
+                {
+                    var errorDialog = new ErrorDialog(
+                        title: "Whisper-Modell nicht gefunden",
+                        message: $"Das konfigurierte Whisper-Modell wurde nicht gefunden.\\n\\nBitte prüfen Sie die Einstellungen.\\n\\nDetails: {ex.Message}",
+                        iconType: ErrorIconType.Error
+                    );
+                    errorDialog.ShowDialog();
+                });
+            }
+            catch (STTTimeoutException ex)
+            {
+                AppLogger.LogError("STT timeout", ex);
+                _stateMachine.TransitionTo(AppState.Idle);
+
+                Dispatcher.Invoke(() =>
+                {
+                    var errorDialog = new ErrorDialog(
+                        title: "Transkription zu langsam",
+                        message: $"Die Spracherkennung hat zu lange gedauert und wurde abgebrochen.\\n\\nDetails: {ex.Message}",
+                        iconType: ErrorIconType.Warning
+                    );
+                    errorDialog.ShowDialog();
+                });
+            }
+            catch (InvalidAudioException ex)
+            {
+                AppLogger.LogError("Invalid audio for STT", ex);
+                _stateMachine.TransitionTo(AppState.Idle);
+
+                Dispatcher.Invoke(() =>
+                {
+                    var errorDialog = new ErrorDialog(
+                        title: "Ungültige Audiodatei",
+                        message: $"Die Audiodatei konnte nicht verarbeitet werden.\\n\\nDetails: {ex.Message}",
+                        iconType: ErrorIconType.Error
+                    );
+                    errorDialog.ShowDialog();
+                });
+            }
+            catch (STTException ex)
+            {
+                AppLogger.LogError("STT error", ex);
+                _stateMachine.TransitionTo(AppState.Idle);
+
+                Dispatcher.Invoke(() =>
+                {
+                    var errorDialog = new ErrorDialog(
+                        title: "Spracherkennungsfehler",
+                        message: $"Fehler bei der Spracherkennung:\\n\\n{ex.Message}",
+                        iconType: ErrorIconType.Error
+                    );
+                    errorDialog.ShowDialog();
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogger.LogError("Error during recording/processing", ex);
+
+            // Ensure we return to idle state
+            if (_stateMachine!.State != AppState.Idle)
+            {
+                _stateMachine.TransitionTo(AppState.Idle);
+            }
+
+            // Show error dialog
+            Dispatcher.Invoke(() =>
+            {
+                var errorDialog = new ErrorDialog(
+                    title: "Aufnahmefehler",
+                    message: $"Fehler während der Audioaufnahme:\n\n{ex.Message}",
+                    iconType: ErrorIconType.Error
+                );
+                errorDialog.ShowDialog();
+            });
+        }
+        finally
+        {
+            _recordingSemaphore.Release();
+        }
     }
 
     /// <summary>
@@ -143,6 +494,8 @@ public partial class App : Application
         AppLogger.LogInformation("Application exiting");
 
         // Cleanup resources
+        _recordingSemaphore?.Dispose();
+        _audioRecorder?.Dispose();
         _hotkeyManager?.Dispose();
         _trayIconManager?.Dispose();
 

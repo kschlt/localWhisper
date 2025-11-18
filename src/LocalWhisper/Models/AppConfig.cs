@@ -5,7 +5,8 @@ namespace LocalWhisper.Models;
 /// </summary>
 /// <remarks>
 /// Iteration 1: Minimal schema (hotkey only).
-/// Iteration 5: Full schema (paths, stt, history, postprocessing, logging).
+/// Iteration 3: Added Whisper STT configuration.
+/// Iteration 5: Full schema (paths, history, postprocessing, logging).
 ///
 /// TODO(PH-003, Iter-5): Expand to full schema
 /// See: docs/meta/placeholders-tracker.md (PH-003)
@@ -18,10 +19,14 @@ public class AppConfig
     /// </summary>
     public HotkeyConfig Hotkey { get; set; } = new();
 
+    /// <summary>
+    /// Whisper STT configuration (Iteration 3).
+    /// </summary>
+    public WhisperConfig Whisper { get; set; } = new();
+
     // Future iterations will add:
     // public AppMetadata App { get; set; } = new();
     // public PathsConfig Paths { get; set; } = new();
-    // public SttConfig Stt { get; set; } = new();
     // public HistoryConfig History { get; set; } = new();
     // public PostProcessingConfig PostProcessing { get; set; } = new();
     // public LoggingConfig Logging { get; set; } = new();
@@ -67,6 +72,78 @@ public class HotkeyConfig
             {
                 throw new InvalidOperationException($"Invalid modifier key: {modifier}. Valid: Ctrl, Shift, Alt, Win.");
             }
+        }
+    }
+}
+
+/// <summary>
+/// Whisper STT configuration section (Iteration 3).
+/// </summary>
+public class WhisperConfig
+{
+    /// <summary>
+    /// Path to Whisper CLI executable.
+    /// Default: "whisper-cli" (assumes in PATH).
+    /// </summary>
+    public string CLIPath { get; set; } = "whisper-cli";
+
+    /// <summary>
+    /// Path to Whisper model file (e.g., ggml-small.bin).
+    /// Default: Empty (must be configured before first use).
+    /// </summary>
+    public string ModelPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Language code for transcription (e.g., "de", "en").
+    /// Default: "de" (German).
+    /// </summary>
+    public string Language { get; set; } = "de";
+
+    /// <summary>
+    /// Timeout for STT processing in seconds.
+    /// Default: 60 seconds.
+    /// </summary>
+    public int TimeoutSeconds { get; set; } = 60;
+
+    /// <summary>
+    /// Validate Whisper configuration.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">If configuration is invalid</exception>
+    public void Validate()
+    {
+        if (string.IsNullOrWhiteSpace(CLIPath))
+        {
+            throw new InvalidOperationException("Whisper CLI path must be specified.");
+        }
+
+        if (string.IsNullOrWhiteSpace(ModelPath))
+        {
+            throw new InvalidOperationException("Whisper model path must be specified.");
+        }
+
+        if (string.IsNullOrWhiteSpace(Language))
+        {
+            throw new InvalidOperationException("Whisper language code must be specified.");
+        }
+
+        // Validate language code (common ISO 639-1 codes supported by Whisper)
+        var validLanguages = new HashSet<string>
+        {
+            "de", "en", "fr", "es", "it", "pt", "nl", "pl", "ru",
+            "zh", "ja", "ko", "ar", "tr", "sv", "da", "no", "fi"
+        };
+
+        if (!validLanguages.Contains(Language.ToLowerInvariant()))
+        {
+            throw new InvalidOperationException(
+                $"Invalid language code: '{Language}'. " +
+                $"Supported: {string.Join(", ", validLanguages.OrderBy(x => x))}"
+            );
+        }
+
+        if (TimeoutSeconds <= 0)
+        {
+            throw new InvalidOperationException("Whisper timeout must be greater than 0 seconds.");
         }
     }
 }

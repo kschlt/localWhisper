@@ -696,47 +696,127 @@ Feature: Wizard Step 1: Data Root Selection
       | tmp/ |
 ```
 
-## US-041: Wizard Step 2 - Model Verification
+## US-041a: Wizard Step 2 - Model Verification (File Selection)
+
+**Note:** This user story was split from US-041. HTTP download is deferred to US-041b (Iteration 5b).
 
 ```gherkin
-@Iter-5 @FR-017 @Priority-High
-Feature: Wizard Step 2: Model Verification
+@Iter-5a @FR-017 @Priority-High
+Feature: Wizard Step 2: Model Verification (File Selection)
   As a new user
-  I want the app to help me get the right model
+  I want to provide my existing Whisper model file
   So that transcription works correctly
+
+  Background:
+    Given the wizard is on Step 2
+    And the data root has been configured
+    And the user has already downloaded a model from HuggingFace or whisper.cpp
+
+  @WindowsOnly @Manual
+  Scenario: User provides existing model file
+    When the user clicks "Modell-Datei auswählen..."
+    And selects a file "C:\Downloads\ggml-small.bin"
+    Then SHA-1 hash verification should start
+    And a progress indicator should show "Berechne Hash..."
+    And when hash matches "55356645c2b361a969dfd0ef2c5a50d530afd8d5"
+    Then the file should be copied to "<data_root>/models/ggml-small.bin"
+    And a success message "Modell OK ✓" should display
+    And the "Weiter" button should be enabled
+
+  @Contract @CanRunInClaudeCode
+  Scenario: Model file hash verification (SHA-1)
+    Given a model file "ggml-small.bin" is selected
+    When SHA-1 hash is computed
+    And the computed hash is "55356645c2b361a969dfd0ef2c5a50d530afd8d5"
+    Then verification succeeds
+    And the model is marked as valid
+
+  @WindowsOnly @Manual
+  Scenario: Invalid model file hash
+    Given a corrupted or wrong file "ggml-small.bin" is selected
+    When SHA-1 hash is computed
+    And the hash does NOT match expected value "55356645c2b361a969dfd0ef2c5a50d530afd8d5"
+    Then an error dialog should show: "Modell-Datei ist beschädigt oder ungültig"
+    And the "Weiter" button should remain disabled
+
+  @WindowsOnly @Manual
+  Scenario: Model tradeoff display
+    Given the wizard is on Step 2
+    When the user views the model selection options
+    Then the following models should be listed:
+      | Model | Description |
+      | base | Schnell (142 MB) - Gut für Echtzeit |
+      | small | Empfohlen (466 MB) - Beste Balance ⭐ |
+      | medium | Hohe Qualität (1.5 GB) - Langsamer |
+      | large-v3 | Höchste Qualität (2.9 GB) - Am langsamsten |
+    And "small" should be highlighted as recommended
+
+  @WindowsOnly @Manual
+  Scenario: Language selection affects model list
+    Given the wizard is on Step 2
+    When the user selects language "English"
+    Then the model list should show: base.en, small.en, medium.en, large-v3
+    When the user selects language "German"
+    Then the model list should show: base, small, medium, large-v3
+```
+
+## US-041b: Wizard Step 2 - Model Download
+
+**Status:** Deferred to Iteration 5b
+**Rationale:** HTTP download is a UX enhancement, not blocking for v0.1. Users can download models manually (one-time setup).
+
+```gherkin
+@Iter-5b @FR-017 @Priority-Medium
+Feature: Wizard Step 2: Model Download
+  As a new user
+  I want to download a model directly from the wizard
+  So that I don't have to find it manually
 
   Background:
     Given the wizard is on Step 2
     And the data root has been configured
 
   @WindowsOnly @Manual
-  Scenario: User chooses to download model
-    When the user selects "Modell herunterladen (empfohlen)"
+  Scenario: User downloads model with progress tracking
+    When the user selects "Modell herunterladen"
     And selects language "German / Deutsch"
     And selects model size "small (466 MB, empfohlen)"
     And clicks "Herunterladen"
-    Then a download progress bar should appear
-    And the model should download from "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
-    And the progress should update regularly
-    And when complete, SHA-256 hash verification should run
-
-  @Contract @CanRunInClaudeCode
-  Scenario: Downloaded model hash is verified
-    Given a model file "ggml-small.bin" has been downloaded
-    When SHA-256 hash is computed
-    And compared to the known-good hash
-    And the hash matches
-    Then a success message "Modell OK ✓" should display
-    And the "Weiter" button should be enabled
+    Then a download progress dialog should appear
+    And the model should download from configured URL
+    And progress bar should update every 100ms
+    And download speed should be displayed (MB/s)
+    And ETA should be displayed
+    And when complete, SHA-1 verification should run
+    And on success, "Modell OK ✓" should display
 
   @WindowsOnly @Manual
-  Scenario: User provides existing model file
-    When the user selects "Ich habe das Modell bereits"
-    And clicks "Datei wählen..."
-    And selects a file "C:\Models\ggml-small.bin"
-    Then the file should be copied to "<data_root>/models/"
-    And SHA-256 verification should run
-    And if valid, "Modell OK ✓" should display
+  Scenario: Download can be cancelled
+    Given a model download is in progress
+    When the user clicks "Abbrechen"
+    Then the download should stop immediately
+    And the partial file should be deleted
+    And the wizard should return to model selection
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Download retry on failure
+    Given the model download fails (network error)
+    When the download error occurs
+    Then the system should retry up to 3 times
+    And each retry should use exponential backoff (1s, 2s, 4s)
+    And if all retries fail, an error dialog should show
+
+  @Contract @CanRunInClaudeCode
+  Scenario: SHA-1 verification after download
+    Given a model file "ggml-small.bin" has been downloaded
+    When SHA-1 hash is computed
+    And the hash is "55356645c2b361a969dfd0ef2c5a50d530afd8d5"
+    Then verification succeeds
+    And the model is ready for use
+    When the hash does NOT match
+    Then the download is marked as failed
+    And the file is deleted
+    And an error dialog shows: "Download beschädigt - bitte erneut versuchen"
 ```
 
 ## US-042: Wizard Step 3 - Hotkey Configuration

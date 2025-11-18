@@ -1,0 +1,65 @@
+<UserControl x:Class="LocalWhisper.UI.Wizard.HotkeyStep"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:LocalWhisper.UI.Controls"
+             Background="White">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="40,30">
+            <TextBlock Text="Hotkey konfigurieren"
+                      FontSize="16"
+                      FontWeight="SemiBold"
+                      Margin="0,0,0,10"/>
+
+            <TextBlock Text="Wählen Sie eine Tastenkombination zum Starten der Sprachaufnahme:"
+                      TextWrapping="Wrap"
+                      Margin="0,0,0,20"
+                      Foreground="#666666"/>
+
+            <!-- Hotkey Input -->
+            <Label Content="Hotkey:" Margin="0,0,0,5"/>
+            <controls:HotkeyTextBox x:Name="HotkeyInput"
+                                   Padding="8"
+                                   Margin="0,0,0,15"
+                                   HotkeyChanged="HotkeyInput_HotkeyChanged"/>
+
+            <!-- Conflict Detection Status -->
+            <StackPanel x:Name="ConflictPanel" Visibility="Collapsed" Margin="0,0,0,15">
+                <TextBlock x:Name="ConflictStatus"
+                          FontWeight="SemiBold"
+                          Foreground="#FF9800"/>
+            </StackPanel>
+
+            <!-- Instructions -->
+            <Border BorderBrush="#E0E0E0" BorderThickness="1" Background="#F5F5F5" Padding="15" Margin="0,0,0,15">
+                <StackPanel>
+                    <TextBlock Text="Empfehlungen:" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock TextWrapping="Wrap" Foreground="#666666" Margin="0,0,0,5">
+                        • Verwenden Sie mindestens einen Modifikator (Ctrl, Shift, Alt)
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Foreground="#666666" Margin="0,0,0,5">
+                        • Gute Wahl: Ctrl+Shift+D, Ctrl+Alt+V, Win+S
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Foreground="#666666" Margin="0,0,0,5">
+                        • Vermeiden Sie Standard-Shortcuts (Ctrl+C, Ctrl+V, Alt+F4)
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Foreground="#666666" Margin="0,0,0,5">
+                        • Sie können die Tastenkombination später in den Einstellungen ändern
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Preview -->
+            <Border BorderBrush="#2196F3" BorderThickness="1" Background="#E3F2FD" Padding="15">
+                <StackPanel>
+                    <TextBlock Text="Vorschau:" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock x:Name="PreviewText"
+                              TextWrapping="Wrap"
+                              Foreground="#1976D2">
+                        Halten Sie die Tastenkombination gedrückt, um aufzunehmen. Lassen Sie sie los, um die Transkription zu starten.
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

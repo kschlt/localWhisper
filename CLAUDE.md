@@ -78,18 +78,41 @@ User holds hotkey → Audio recorded → Whisper STT → Clipboard + History + F
 
 ## Implementation Rules
 
+**Test-Driven Development (TDD) - MANDATORY:**
+1. **Write tests FIRST** based on Gherkin scenarios and acceptance criteria
+2. **Switch to Senior Dev/Architect role** - Review your own tests (four-eyes principle):
+   - Verify tests match specifications exactly
+   - Check tests cover both happy path AND edge cases
+   - Ensure tests don't validate incorrect behavior
+   - Identify missing test cases, performance issues, edge cases
+   - Provide detailed feedback (as senior dev to yourself)
+3. **Switch back to Implementation role** - Fix tests based on your own review feedback
+4. **Implement** code to make tests pass
+5. **Switch to Senior Dev role again** - Review your own implementation:
+   - Check code quality, patterns, error handling
+   - Verify implementation matches specifications
+   - Identify bugs, security issues, performance problems
+   - Provide detailed feedback on improvements needed
+6. **Switch back to Implementation role** - Fix issues from your code review
+7. **Refactor** while keeping tests green
+8. **Never** write tests after implementation (prevents testing wrong behavior)
+
+**CRITICAL:** Never stop and wait for user feedback - play both roles yourself in sequence and continue until complete!
+
 **DO:**
 - Work sequentially (Iteration 1 → 2 → 3 → ... → 8)
 - Follow acceptance criteria exactly (no scope creep)
 - Add structured logging (state transitions, errors, metrics)
 - Update traceability matrix when adding code
 - Reference US-###, FR-### in commits
+- Write tests BEFORE implementation (TDD)
 
 **DON'T:**
 - Skip iterations or implement ahead
 - Change requirements without updating specs
 - Modify CLI contracts without updating `docs/architecture/interface-contracts.md`
 - Break the ID traceability chain
+- Write tests after implementation (always test-first!)
 
 ---
 
