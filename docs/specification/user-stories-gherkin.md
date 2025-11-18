@@ -1055,7 +1055,7 @@ Feature: Settings: Model Verification
   Scenario: User checks model integrity
     Given the Settings window is open
     When the user clicks "Modell prüfen"
-    Then the SHA-256 hash should be recomputed
+    Then the SHA-1 hash should be recomputed
     And if valid, a message should display "Modell OK ✓"
     And if invalid, a warning should display "Modell ungültig. Bitte neu herunterladen."
 
@@ -1066,6 +1066,160 @@ Feature: Settings: Model Verification
     Then the new model should be verified
     And if valid, config should be updated
     And no restart should be required (next transcription uses new model)
+```
+
+## US-054: Settings Window - Access and Navigation
+
+```gherkin
+@Iter-6 @FR-020 @Priority-High
+Feature: Settings Window Access
+  As a user
+  I want to access settings easily
+  So that I can configure the app
+
+  @WindowsOnly @Manual
+  Scenario: User opens Settings from tray menu
+    Given the app is running in the system tray
+    When the user right-clicks the tray icon
+    Then a menu should appear with options: "Einstellungen", "History", "Beenden"
+    When the user clicks "Einstellungen"
+    Then the Settings window should open
+    And the Settings window should be modal (blocks app interaction)
+    And the Settings window should be centered on screen
+
+  @WindowsOnly @Manual
+  Scenario: User opens history folder from tray menu
+    Given the app is running
+    When the user right-clicks the tray icon
+    And clicks "History"
+    Then Windows Explorer should open showing the history folder
+    And the path should be "<data_root>/history/"
+
+  @WindowsOnly @Manual
+  Scenario: Settings window shows current configuration
+    Given the current hotkey is "Ctrl+Shift+D"
+    And the data root is "C:\Users\...\LocalWhisper"
+    And the language is "de"
+    When the Settings window opens
+    Then all fields should display current values
+    And the Save button should be disabled (no changes yet)
+    And the version number "v0.1.0" should be displayed at bottom-left
+```
+
+## US-055: Settings - Save and Cancel Behavior
+
+```gherkin
+@Iter-6 @FR-020 @Priority-High
+Feature: Settings Save and Cancel
+  As a user
+  I want my changes saved correctly
+  So that my preferences persist
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Save button disabled until changes made
+    Given the Settings window is open
+    And no fields have been modified
+    Then the Save button should be disabled
+    When the user changes any field
+    Then the Save button should be enabled
+
+  @WindowsOnly @Manual
+  Scenario: User saves changes without restart requirement
+    Given the Settings window is open
+    When the user changes file format from ".md" to ".txt"
+    And clicks "Speichern"
+    Then the config.toml should be updated
+    And the Settings window should close immediately
+    And no restart dialog should appear
+
+  @WindowsOnly @Manual
+  Scenario: User saves changes requiring restart
+    Given the Settings window is open
+    When the user changes the hotkey to "Ctrl+Alt+D"
+    And clicks "Speichern"
+    Then the config should be saved
+    And a restart dialog should appear: "Einige Änderungen erfordern einen Neustart. Jetzt neu starten?"
+    When the user clicks "Ja"
+    Then the app should restart
+    When the user clicks "Nein"
+    Then the Settings window should close
+    And changes should be saved but not yet active
+
+  @WindowsOnly @Manual
+  Scenario: Multiple changes requiring restart
+    Given the Settings window is open
+    When the user changes hotkey, language, and data root
+    And clicks "Speichern"
+    Then ONE restart dialog should appear (not multiple)
+    And after restart, all changes should be active
+
+  @WindowsOnly @Manual
+  Scenario: User cancels with no changes
+    Given the Settings window is open
+    And no fields were modified
+    When the user clicks "Abbrechen"
+    Then the window should close immediately (no confirmation)
+
+  @WindowsOnly @Manual
+  Scenario: User cancels with unsaved changes
+    Given the Settings window is open
+    And the user changed the hotkey to "Ctrl+Alt+V"
+    When the user clicks "Abbrechen"
+    Then a confirmation dialog should appear: "Änderungen verwerfen?"
+    When the user clicks "Ja"
+    Then the Settings window should close
+    And the config should NOT be changed
+    When the user clicks "Nein"
+    Then the confirmation dialog should close
+    And the Settings window should remain open
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Save button disabled with validation errors
+    Given the Settings window is open
+    When the user selects an invalid data root path
+    Then the field should show a red error: "⚠ Pfad nicht gefunden"
+    And the Save button should be disabled
+    When the user fixes the validation error
+    Then the Save button should be enabled
+```
+
+## US-056: Settings - Validation and Error Handling
+
+```gherkin
+@Iter-6 @FR-020 @Priority-High
+Feature: Settings Validation
+  As a user
+  I want validation feedback
+  So that I don't save invalid settings
+
+  @WindowsOnly @Manual
+  Scenario: Invalid data root path validation
+    Given the Settings window is open
+    When the user clicks "Durchsuchen"
+    And selects a folder without valid structure (no config/, models/ subdirectories)
+    Then an error should display: "Dieser Ordner enthält keine gültige LocalWhisper-Installation"
+    And the path should not be updated
+    And the Save button should remain disabled
+
+  @WindowsOnly @Manual
+  Scenario: Data root validation on browse
+    Given the Settings window is open
+    When the user clicks "Durchsuchen"
+    And selects a folder with valid structure
+    Then the path should update immediately
+    And no error should be shown
+    And the Save button should be enabled (change detected)
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Config save failure handling
+    Given the Settings window is open
+    And the user makes valid changes
+    When the user clicks "Speichern"
+    And writing to config.toml fails (permissions error)
+    Then an error dialog should appear: "Fehler beim Speichern"
+    And the error message should be displayed
+    And the Settings window should remain open
+    And the user can retry or cancel
 ```
 
 ---
