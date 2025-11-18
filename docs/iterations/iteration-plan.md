@@ -126,7 +126,7 @@ Iteration 1 (Hotkey & State) ✅
 | 5a | US-040, US-041a, US-042, US-045, US-046 | 5 | 📋 Ready |
 | 5b | US-041b, US-043, US-044 | 3 | 📋 Planned |
 | 6 | US-050..059 | 10 | 📋 Ready |
-| 7 | US-060..062 | 3 | 📋 Planned |
+| 7 | US-060..064 | 5 | 📋 Ready (with glossary + wizard) |
 | 8 | US-070..076 | 7 | 📋 Planned |
 
 **Note:** US-041 was split into US-041a (file selection, Iteration 5a) and US-041b (HTTP download, Iteration 5b).

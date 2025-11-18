@@ -1497,6 +1497,131 @@ Feature: Post-Processing Meaning Preservation
     And confirm meaning was preserved in all cases
 ```
 
+## US-063: Glossary Support
+
+```gherkin
+@Iter-7 @FR-022 @Priority-Medium
+Feature: Custom Glossary for Post-Processing
+  As a user with domain-specific abbreviations
+  I want to define custom expansions
+  So that post-processing understands my terminology
+
+  Background:
+    Given post-processing is enabled
+    And glossary is enabled in config
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Glossary expands abbreviations
+    Given the glossary file at "<DATA_ROOT>/config/glossary.txt" contains:
+      """
+      asap = as soon as possible
+      fyi = for your information
+      imho = in my humble opinion
+      """
+    And the STT result is "please reply asap fyi"
+    When post-processing runs
+    Then the LLM prompt should include the glossary content
+    And the output should contain "as soon as possible"
+    And the output should contain "for your information"
+
+  @Unit @CanRunInClaudeCode
+  Scenario: Glossary is appended to system prompt
+    Given the glossary file contains 3 entries
+    When building the LLM prompt
+    Then the system prompt should end with "\n\nAPPLY THESE ABBREVIATIONS:\nasap = as soon as possible\nfyi = for your information\nimho = in my humble opinion"
+
+  @Manual
+  Scenario: User creates custom glossary
+    Given the Settings window is open
+    And post-processing is enabled
+    When the user checks "Benutzerdefiniertes Glossar verwenden"
+    And browses to a custom glossary file
+    And clicks "Speichern"
+    Then the config should have postprocessing.use_glossary = true
+    And the next dictation should use the glossary
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Invalid glossary format is ignored
+    Given the glossary file contains invalid syntax (no = sign)
+    When post-processing runs
+    Then a warning should be logged "Glossary format invalid, skipping"
+    And post-processing should proceed without the glossary
+    And no error should occur
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Large glossary is truncated
+    Given the glossary file contains 600 entries
+    When loading the glossary
+    Then only the first 500 entries should be loaded
+    And a warning should be logged "Glossary truncated to 500 entries"
+```
+
+## US-064: Wizard - Post-Processing Setup
+
+```gherkin
+@Iter-5 @Iter-7 @FR-022 @Priority-High
+Feature: First-Run Wizard - Post-Processing Setup
+  As a new user
+  I want to enable post-processing during setup
+  So that I get the best experience from the start
+
+  Background:
+    Given this is the first run (no config exists)
+    And the wizard is on Step 3 (Post-Processing Setup)
+
+  @WindowsOnly @Manual
+  Scenario: User enables post-processing in wizard (default behavior)
+    Given the "Enable Post-Processing" checkbox is checked by default
+    And the explanation text describes the feature
+    When the user clicks "Next"
+    Then Llama 3.2 3B model should be queued for download (~2GB)
+    And llama-cli.exe should be queued for download
+    And the wizard should proceed to Step 4 (Hotkey Selection)
+
+  @WindowsOnly @Manual
+  Scenario: Download progress shows both models
+    Given the user enabled post-processing in wizard
+    And Step 3 is complete
+    When downloading models after the wizard
+    Then progress should show: "Downloading Whisper model..."
+    And then: "Downloading Llama model..."
+    Or combined: "Downloading models (2/2)..."
+    And total size should reflect both models (~3.5GB)
+
+  @WindowsOnly @Manual
+  Scenario: User skips post-processing in wizard
+    Given the "Enable Post-Processing" checkbox is checked
+    When the user unchecks it
+    And clicks "Next"
+    Then NO Llama model download should be queued
+    And NO llama-cli.exe download should occur
+    And config should have postprocessing.enabled = false
+    And the wizard should proceed to Step 4 (Hotkey Selection)
+    And the user can enable post-processing later in Settings
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Config reflects wizard choice (enabled)
+    Given the user enabled post-processing in wizard
+    When the wizard completes
+    Then config.toml should contain:
+      """
+      [postprocessing]
+      enabled = true
+      llm_cli_path = "<DATA_ROOT>/bin/llama-cli.exe"
+      model_path = "<DATA_ROOT>/models/llama-3.2-3b-q4.gguf"
+      """
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Config reflects wizard choice (disabled)
+    Given the user disabled post-processing in wizard
+    When the wizard completes
+    Then config.toml should contain:
+      """
+      [postprocessing]
+      enabled = false
+      """
+```
+
 ---
 
 # ITERATION 8: Stabilization + Reset + Logs
