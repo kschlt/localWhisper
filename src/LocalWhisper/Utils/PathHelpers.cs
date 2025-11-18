@@ -60,4 +60,20 @@ public static class PathHelpers
     {
         return Path.Combine(dataRoot, "logs");
     }
+
+    /// <summary>
+    /// Get the path to the history directory.
+    /// </summary>
+    public static string GetHistoryPath(string dataRoot)
+    {
+        return Path.Combine(dataRoot, "history");
+    }
+
+    /// <summary>
+    /// Get the path to the models directory.
+    /// </summary>
+    public static string GetModelsPath(string dataRoot)
+    {
+        return Path.Combine(dataRoot, "models");
+    }
 }
