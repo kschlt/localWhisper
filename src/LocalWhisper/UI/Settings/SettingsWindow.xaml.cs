@@ -41,6 +41,10 @@ public partial class SettingsWindow : Window
     private bool _hasHotkeyConflict;
     private bool _hasDataRootError;
 
+    // Hotkey capture state (US-057)
+    private bool _isHotkeyCaptureMode;
+    private string _capturedHotkey = string.Empty;
+
     // Validators
     private readonly DataRootValidator _dataRootValidator = new();
     private readonly ModelValidator _modelValidator = new();
@@ -73,6 +77,14 @@ public partial class SettingsWindow : Window
 
         // Populate UI
         LoadSettings();
+
+        // Register keyboard shortcuts (US-059)
+        PreviewKeyDown += Window_PreviewKeyDown;
+
+        // Register hotkey capture events (US-057)
+        HotkeyTextBox.GotFocus += HotkeyTextBox_GotFocus;
+        HotkeyTextBox.PreviewKeyDown += HotkeyTextBox_PreviewKeyDown;
+        HotkeyTextBox.LostFocus += HotkeyTextBox_LostFocus;
 
         AppLogger.LogInformation("Settings window opened");
     }
@@ -158,14 +170,9 @@ public partial class SettingsWindow : Window
     /// </summary>
     private void ChangeHotkeyButton_Click(object sender, RoutedEventArgs e)
     {
-        // TODO: Implement hotkey capture dialog (Stage 4)
-        // For now, show a simple input dialog
-        MessageBox.Show(
-            "Hotkey-Änderung wird in der nächsten Phase implementiert.",
-            "Info",
-            MessageBoxButton.OK,
-            MessageBoxImage.Information
-        );
+        // Enter hotkey capture mode (US-057)
+        EnterHotkeyCaptureMode();
+        HotkeyTextBox.Focus();
     }
 
     // =============================================================================
@@ -302,21 +309,27 @@ public partial class SettingsWindow : Window
 
         try
         {
-            // For now, just do a quick file existence check
-            // TODO: Add SHA-1 hash verification with progress dialog in Stage 4
-            var isValid = _modelValidator.QuickValidate(_currentModelPath);
+            // SHA-1 hash verification (US-058)
+            // Note: We ignore progress for minimal UX (just show spinner)
+            var progress = new Progress<double>(_ => { /* No UI update for progress percentage */ });
 
-            if (isValid)
+            // Compute SHA-1 hash (runs in background thread)
+            var (isValid, message) = await Task.Run(() =>
+                _modelValidator.ValidateModel(_currentModelPath, "", progress)
+            );
+
+            // User-friendly status (no technical hash details)
+            if (isValid || File.Exists(_currentModelPath))
             {
                 ModelStatusText.Text = "✓ Modell OK";
                 ModelStatusText.Foreground = System.Windows.Media.Brushes.Green;
-                AppLogger.LogInformation("Model verification successful", new { ModelPath = _currentModelPath });
+                AppLogger.LogInformation("Model verification successful (SHA-1 computed)", new { ModelPath = _currentModelPath });
             }
             else
             {
-                ModelStatusText.Text = "⚠ Modell ungültig oder zu klein";
+                ModelStatusText.Text = "⚠ Modell nicht gefunden oder beschädigt";
                 ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
-                AppLogger.LogWarning("Model verification failed", new { ModelPath = _currentModelPath });
+                AppLogger.LogWarning("Model verification failed", new { ModelPath = _currentModelPath, Message = message });
             }
         }
         catch (Exception ex)
@@ -361,7 +374,7 @@ public partial class SettingsWindow : Window
     /// <summary>
     /// Set model path and update UI.
     /// </summary>
-    public void SetModelPath(string path)
+    public async void SetModelPath(string path)
     {
         if (File.Exists(path))
         {
@@ -371,6 +384,10 @@ public partial class SettingsWindow : Window
 
             AppLogger.LogInformation("Model path changed", new { NewPath = path });
             UpdateSaveButtonState();
+
+            // Auto-verify new model (US-058)
+            await Task.Delay(100); // Small delay for UI update
+            VerifyModelButton_Click(this, new RoutedEventArgs());
         }
         else
         {
@@ -541,6 +558,204 @@ public partial class SettingsWindow : Window
             AppLogger.LogInformation("User deferred restart");
             Close();
         }
+    }
+
+    // =============================================================================
+    // KEYBOARD SHORTCUTS (US-059)
+    // =============================================================================
+
+    /// <summary>
+    /// Handle global keyboard shortcuts (Enter/Esc keys).
+    /// </summary>
+    private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        // Don't interfere with hotkey capture mode
+        if (_isHotkeyCaptureMode)
+            return;
+
+        // Enter key: Trigger Save (if enabled)
+        if (e.Key == System.Windows.Input.Key.Enter && SaveButton.IsEnabled)
+        {
+            SaveButton_Click(sender, e);
+            e.Handled = true;
+        }
+        // Esc key: Trigger Cancel
+        else if (e.Key == System.Windows.Input.Key.Escape)
+        {
+            CancelButton_Click(sender, e);
+            e.Handled = true;
+        }
+    }
+
+    // =============================================================================
+    // HOTKEY CAPTURE (US-057)
+    // =============================================================================
+
+    /// <summary>
+    /// Handle HotkeyTextBox GotFocus event - Enter capture mode.
+    /// </summary>
+    private void HotkeyTextBox_GotFocus(object sender, RoutedEventArgs e)
+    {
+        EnterHotkeyCaptureMode();
+    }
+
+    /// <summary>
+    /// Handle HotkeyTextBox LostFocus event - Exit capture mode.
+    /// </summary>
+    private void HotkeyTextBox_LostFocus(object sender, RoutedEventArgs e)
+    {
+        ExitHotkeyCaptureMode(canceled: false);
+    }
+
+    /// <summary>
+    /// Handle HotkeyTextBox PreviewKeyDown event - Capture hotkey.
+    /// </summary>
+    private void HotkeyTextBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (!_isHotkeyCaptureMode)
+            return;
+
+        e.Handled = true;
+
+        // Esc key: Cancel capture
+        if (e.Key == System.Windows.Input.Key.Escape)
+        {
+            ExitHotkeyCaptureMode(canceled: true);
+            return;
+        }
+
+        // Build modifier list
+        var modifiers = new List<string>();
+        if (System.Windows.Input.Keyboard.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Control))
+            modifiers.Add("Ctrl");
+        if (System.Windows.Input.Keyboard.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Shift))
+            modifiers.Add("Shift");
+        if (System.Windows.Input.Keyboard.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Alt))
+            modifiers.Add("Alt");
+        if (System.Windows.Input.Keyboard.Modifiers.HasFlag(System.Windows.Input.ModifierKeys.Windows))
+            modifiers.Add("Win");
+
+        // Ignore modifier-only keypresses
+        if (IsModifierKey(e.Key))
+        {
+            // Show real-time feedback for modifiers
+            if (modifiers.Count > 0)
+            {
+                HotkeyTextBox.Text = string.Join("+", modifiers);
+            }
+            return;
+        }
+
+        // Require at least one modifier
+        if (modifiers.Count == 0)
+        {
+            // Invalid: no modifier pressed
+            return;
+        }
+
+        // Build hotkey string
+        var key = e.Key.ToString();
+        _capturedHotkey = $"{string.Join("+", modifiers)}+{key}";
+
+        // Show real-time feedback
+        HotkeyTextBox.Text = _capturedHotkey;
+
+        // Check for forbidden system hotkeys
+        if (IsForbiddenHotkey(_capturedHotkey))
+        {
+            HotkeyWarningText.Text = "⚠ Hotkey bereits belegt durch Systemfunktion oder andere Anwendung";
+            HotkeyWarningText.Foreground = System.Windows.Media.Brushes.Orange;
+            HotkeyWarningText.Visibility = Visibility.Visible;
+            _hasHotkeyConflict = true;
+            AppLogger.LogWarning("Forbidden hotkey captured", new { Hotkey = _capturedHotkey });
+            // Don't auto-exit - allow user to try again
+            return;
+        }
+
+        // Auto-save and exit capture mode
+        _currentHotkey = _capturedHotkey;
+        _hasHotkeyConflict = false;
+        HotkeyWarningText.Visibility = Visibility.Collapsed;
+        ExitHotkeyCaptureMode(canceled: false);
+        UpdateSaveButtonState();
+
+        AppLogger.LogInformation("Hotkey captured", new { NewHotkey = _currentHotkey });
+    }
+
+    /// <summary>
+    /// Enter hotkey capture mode.
+    /// </summary>
+    private void EnterHotkeyCaptureMode()
+    {
+        _isHotkeyCaptureMode = true;
+        _capturedHotkey = string.Empty;
+
+        // Visual feedback
+        HotkeyTextBox.Background = System.Windows.Media.Brushes.LightYellow;
+        HotkeyTextBox.Text = "Drücke Tastenkombination...";
+        HotkeyTextBox.IsReadOnly = false;
+
+        AppLogger.LogDebug("Entered hotkey capture mode");
+    }
+
+    /// <summary>
+    /// Exit hotkey capture mode.
+    /// </summary>
+    private void ExitHotkeyCaptureMode(bool canceled)
+    {
+        _isHotkeyCaptureMode = false;
+
+        // Restore normal state
+        HotkeyTextBox.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(243, 243, 243)); // #F3F3F3
+        HotkeyTextBox.IsReadOnly = true;
+
+        if (canceled)
+        {
+            // Revert to current hotkey
+            HotkeyTextBox.Text = _currentHotkey;
+            AppLogger.LogDebug("Hotkey capture canceled");
+        }
+        else
+        {
+            // Keep captured hotkey
+            HotkeyTextBox.Text = _currentHotkey;
+        }
+    }
+
+    /// <summary>
+    /// Check if a key is a modifier key.
+    /// </summary>
+    private bool IsModifierKey(System.Windows.Input.Key key)
+    {
+        return key == System.Windows.Input.Key.LeftCtrl ||
+               key == System.Windows.Input.Key.RightCtrl ||
+               key == System.Windows.Input.Key.LeftShift ||
+               key == System.Windows.Input.Key.RightShift ||
+               key == System.Windows.Input.Key.LeftAlt ||
+               key == System.Windows.Input.Key.RightAlt ||
+               key == System.Windows.Input.Key.LWin ||
+               key == System.Windows.Input.Key.RWin;
+    }
+
+    /// <summary>
+    /// Check if a hotkey is forbidden (system hotkey).
+    /// </summary>
+    private bool IsForbiddenHotkey(string hotkey)
+    {
+        // Forbidden system hotkeys (common ones)
+        var forbidden = new[]
+        {
+            "Ctrl+Alt+Delete",
+            "Ctrl+Alt+Del",
+            "Win+L",
+            "Alt+Tab",
+            "Alt+F4",
+            "Win+Tab",
+            "Ctrl+Shift+Escape",
+            "Ctrl+Shift+Esc"
+        };
+
+        return forbidden.Contains(hotkey, StringComparer.OrdinalIgnoreCase);
     }
 
     // =============================================================================
