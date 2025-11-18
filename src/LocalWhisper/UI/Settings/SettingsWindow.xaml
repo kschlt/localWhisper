@@ -1,0 +1,121 @@
+<Window x:Class="LocalWhisper.UI.Settings.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="LocalWhisper - Einstellungen"
+        Width="500"
+        Height="600"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="White">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Scrollable Content Area -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- HOTKEY SECTION -->
+                <Border BorderBrush="#D1D1D1" BorderThickness="0,0,0,1" Padding="0,0,0,20" Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="Hotkey" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Hotkey TextBox (read-only display) -->
+                            <TextBox x:Name="HotkeyTextBox"
+                                     Grid.Column="0"
+                                     IsReadOnly="True"
+                                     Height="30"
+                                     VerticalContentAlignment="Center"
+                                     Margin="0,0,10,0"
+                                     Background="#F3F3F3"/>
+
+                            <!-- Change Button -->
+                            <Button x:Name="ChangeHotkeyButton"
+                                    Grid.Column="1"
+                                    Content="Ändern..."
+                                    Width="100"
+                                    Height="30"
+                                    Background="#0078D4"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Click="ChangeHotkeyButton_Click"/>
+                        </Grid>
+
+                        <!-- Warning/Error Text -->
+                        <TextBlock x:Name="HotkeyWarningText"
+                                   Margin="0,5,0,0"
+                                   Foreground="#FFB900"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Visibility="Collapsed"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- DATA ROOT SECTION - Will add in Stage 2 -->
+
+                <!-- LANGUAGE SECTION - Will add in Stage 2 -->
+
+                <!-- FILE FORMAT SECTION - Will add in Stage 3 -->
+
+                <!-- MODEL SECTION - Will add in Stage 3 -->
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Bottom Bar: Version + Buttons -->
+        <Grid Grid.Row="2" Margin="0,20,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Version Number -->
+            <TextBlock x:Name="VersionText"
+                       Grid.Column="0"
+                       Text="v0.1.0"
+                       VerticalAlignment="Center"
+                       Foreground="#666666"
+                       FontSize="10"/>
+
+            <!-- Cancel Button -->
+            <Button x:Name="CancelButton"
+                    Grid.Column="2"
+                    Content="Abbrechen"
+                    Width="100"
+                    Height="35"
+                    Background="#E81123"
+                    Foreground="White"
+                    BorderThickness="0"
+                    Margin="0,0,10,0"
+                    Click="CancelButton_Click"/>
+
+            <!-- Save Button -->
+            <Button x:Name="SaveButton"
+                    Grid.Column="3"
+                    Content="Speichern"
+                    Width="100"
+                    Height="35"
+                    Background="#0078D4"
+                    Foreground="White"
+                    BorderThickness="0"
+                    IsEnabled="False"
+                    Click="SaveButton_Click"/>
+        </Grid>
+    </Grid>
+</Window>
