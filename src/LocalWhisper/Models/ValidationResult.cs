@@ -1,17 +1,55 @@
-using System.Collections.Generic;
-
-namespace LocalWhisper.Services;
+namespace LocalWhisper.Models;
 
 /// <summary>
-/// Result of data root validation.
+/// Represents the result of a validation operation.
 /// </summary>
 /// <remarks>
-/// Contains validation status, errors, and warnings.
-/// See: docs/iterations/iteration-05b-download-repair.md (Task 3)
+/// Used by validators (DataRootValidator, ModelValidator, etc.)
+/// to return validation status with detailed error/warning messages.
+/// Iteration 5: Repair flow validation.
+/// Iteration 6: Settings window validation.
 /// </remarks>
 public class ValidationResult
 {
+    /// <summary>
+    /// Whether validation passed (no errors).
+    /// </summary>
     public bool IsValid { get; set; } = true;
-    public List<string> Errors { get; } = new();
-    public List<string> Warnings { get; } = new();
+
+    /// <summary>
+    /// List of error messages (validation failures).
+    /// </summary>
+    public List<string> Errors { get; set; } = new();
+
+    /// <summary>
+    /// List of warning messages (non-critical issues).
+    /// </summary>
+    public List<string> Warnings { get; set; } = new();
+
+    /// <summary>
+    /// Helper method to add an error and mark validation as invalid.
+    /// </summary>
+    public void AddError(string error)
+    {
+        Errors.Add(error);
+        IsValid = false;
+    }
+
+    /// <summary>
+    /// Helper method to add a warning (doesn't affect IsValid).
+    /// </summary>
+    public void AddWarning(string warning)
+    {
+        Warnings.Add(warning);
+    }
+
+    /// <summary>
+    /// Check if there are any errors.
+    /// </summary>
+    public bool HasErrors => Errors.Count > 0;
+
+    /// <summary>
+    /// Check if there are any warnings.
+    /// </summary>
+    public bool HasWarnings => Warnings.Count > 0;
 }
