@@ -1,0 +1,63 @@
+<Window x:Class="LocalWhisper.UI.Wizard.DownloadProgressDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Modell herunterladen"
+        Width="500"
+        Height="250"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="White">
+
+    <Grid Margin="30">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                  x:Name="TitleText"
+                  Text="Lädt Modell herunter..."
+                  FontSize="16"
+                  FontWeight="SemiBold"
+                  Margin="0,0,0,20"/>
+
+        <ProgressBar Grid.Row="1"
+                    x:Name="ProgressBar"
+                    Height="20"
+                    Minimum="0"
+                    Maximum="100"
+                    Value="0"
+                    Margin="0,0,0,15"/>
+
+        <TextBlock Grid.Row="2"
+                  x:Name="DownloadedText"
+                  Text="0 MB / 0 MB"
+                  Foreground="#666666"
+                  Margin="0,0,0,5"/>
+
+        <TextBlock Grid.Row="3"
+                  x:Name="SpeedText"
+                  Text="Geschwindigkeit: 0 MB/s"
+                  Foreground="#666666"
+                  Margin="0,0,0,5"/>
+
+        <TextBlock Grid.Row="4"
+                  x:Name="ETAText"
+                  Text="Verbleibend: --:--"
+                  Foreground="#666666"
+                  Margin="0,0,0,15"/>
+
+        <Button Grid.Row="6"
+               x:Name="CancelButton"
+               Content="Abbrechen"
+               Width="100"
+               Height="30"
+               HorizontalAlignment="Right"
+               Click="CancelButton_Click"/>
+    </Grid>
+</Window>

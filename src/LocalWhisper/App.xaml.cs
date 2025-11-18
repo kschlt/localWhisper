@@ -36,12 +36,50 @@ public partial class App : Application
     {
         try
         {
-            // 1. Initialize data root
+            // 1. Determine default data root
             _dataRoot = PathHelpers.GetDataRoot();
-            PathHelpers.EnsureDataRootExists(_dataRoot);
+            var configPath = PathHelpers.GetConfigPath(_dataRoot);
 
-            // 2. Initialize logging
-            AppLogger.Initialize(_dataRoot);
+            // 2. Check if config exists (first-run vs existing installation)
+            if (!File.Exists(configPath))
+            {
+                // First run - show wizard
+                // NOTE: Initialize logging to temp location since data root doesn't exist yet
+                var tempLogPath = Path.Combine(Path.GetTempPath(), "LocalWhisper");
+                AppLogger.Initialize(tempLogPath);
+                AppLogger.LogInformation("First run detected - launching wizard");
+
+                var wizard = new UI.Wizard.WizardWindow();
+                var result = wizard.ShowDialog();
+
+                if (result != true)
+                {
+                    // User cancelled wizard
+                    AppLogger.LogInformation("Wizard cancelled - exiting");
+                    Shutdown(0);
+                    return;
+                }
+
+                // Wizard completed - update data root to wizard result
+                _dataRoot = wizard.DataRoot!;
+                configPath = PathHelpers.GetConfigPath(_dataRoot);
+
+                // Shutdown temp logging and reinitialize to actual data root
+                AppLogger.Shutdown();
+                AppLogger.Initialize(_dataRoot);
+
+                AppLogger.LogInformation("Wizard completed successfully", new
+                {
+                    DataRoot = _dataRoot
+                });
+            }
+            else
+            {
+                // Config exists - initialize logging normally
+                AppLogger.Initialize(_dataRoot);
+            }
+
+            // 3. Application startup logging
             AppLogger.LogInformation("Application started", new
             {
                 Version = "0.1.0",
@@ -49,9 +87,61 @@ public partial class App : Application
                 DataRoot = _dataRoot
             });
 
-            // 3. Load configuration
-            var configPath = PathHelpers.GetConfigPath(_dataRoot);
+            // 4. Load configuration
             _config = ConfigManager.Load(configPath);
+
+            // 5. Validate data root (repair flow - US-043)
+            var validator = new DataRootValidator();
+            var validationResult = validator.Validate(_dataRoot, _config);
+
+            if (!validationResult.IsValid)
+            {
+                AppLogger.LogWarning("Data root validation failed", new
+                {
+                    Errors = validationResult.Errors,
+                    Warnings = validationResult.Warnings
+                });
+
+                // Show repair dialog
+                var repairDialog = new UI.Dialogs.RepairDialog(_dataRoot, validationResult);
+                var repairResult = repairDialog.ShowDialog();
+
+                if (repairResult == true && repairDialog.NewDataRoot != null)
+                {
+                    // User re-linked to moved folder
+                    _dataRoot = repairDialog.NewDataRoot;
+                    configPath = PathHelpers.GetConfigPath(_dataRoot);
+                    _config = ConfigManager.Load(configPath);
+
+                    AppLogger.LogInformation("Data root relinked", new { NewPath = _dataRoot });
+                }
+                else if (repairDialog.ShouldRunWizard)
+                {
+                    // User chose to run wizard again
+                    var wizard = new UI.Wizard.WizardWindow();
+                    var wizardResult = wizard.ShowDialog();
+
+                    if (wizardResult != true)
+                    {
+                        AppLogger.LogInformation("Wizard cancelled from repair - exiting");
+                        Shutdown(0);
+                        return;
+                    }
+
+                    _dataRoot = wizard.DataRoot!;
+                    configPath = PathHelpers.GetConfigPath(_dataRoot);
+                    _config = ConfigManager.Load(configPath);
+
+                    AppLogger.LogInformation("Wizard completed from repair");
+                }
+                else
+                {
+                    // User chose to exit
+                    AppLogger.LogInformation("User exited from repair dialog");
+                    Shutdown(0);
+                    return;
+                }
+            }
 
             // 4. Initialize audio recorder and check microphone availability
             _audioRecorder = new AudioRecorder();

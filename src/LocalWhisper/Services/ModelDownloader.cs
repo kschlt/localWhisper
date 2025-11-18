@@ -28,7 +28,7 @@ public class ModelDownloader
     private const int MaxRetries = 3;
     private const int InitialRetryDelayMs = 1000;
 
-    public ModelDownloader() : this(new HttpClient())
+    public ModelDownloader() : this(new HttpClient { Timeout = TimeSpan.FromMinutes(10) })
     {
     }
 
@@ -36,6 +36,12 @@ public class ModelDownloader
     {
         _httpClient = httpClient;
         _validator = new ModelValidator();
+
+        // Ensure httpClient has a reasonable timeout
+        if (_httpClient.Timeout == System.Threading.Timeout.InfiniteTimeSpan)
+        {
+            _httpClient.Timeout = TimeSpan.FromMinutes(10);
+        }
     }
 
     /// <summary>

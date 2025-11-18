@@ -67,6 +67,16 @@ public class DataRootValidator
                 result.Errors.Add($"Model file not found: {modelPath}");
             }
         }
+        else if (config.Whisper == null)
+        {
+            result.IsValid = false;
+            result.Errors.Add("Whisper configuration is missing");
+        }
+        else if (string.IsNullOrEmpty(config.Whisper.ModelPath))
+        {
+            result.IsValid = false;
+            result.Errors.Add("Model path is not configured");
+        }
 
         result.IsValid = result.Errors.Count == 0;
         return result;

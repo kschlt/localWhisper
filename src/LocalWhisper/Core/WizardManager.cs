@@ -87,13 +87,31 @@ public class WizardManager
             throw new FileNotFoundException($"Source model file not found: {sourceModelFilePath}");
         }
 
+        // Security: Validate source path to prevent path traversal
+        var fullSourcePath = Path.GetFullPath(sourceModelFilePath);
+        if (!File.Exists(fullSourcePath))
+        {
+            throw new FileNotFoundException($"Invalid source path (after normalization): {fullSourcePath}");
+        }
+
         // Copy model file to models/ directory
-        var modelFileName = Path.GetFileName(sourceModelFilePath);
+        var modelFileName = Path.GetFileName(fullSourcePath); // Use normalized path
+        if (string.IsNullOrWhiteSpace(modelFileName) || modelFileName.Contains(".."))
+        {
+            throw new ArgumentException($"Invalid model filename: {modelFileName}");
+        }
+
         var modelsDir = Path.Combine(dataRoot, "models");
-        var destModelPath = Path.Combine(modelsDir, modelFileName);
+        var destModelPath = Path.GetFullPath(Path.Combine(modelsDir, modelFileName));
+
+        // Security: Ensure destination is within data root
+        if (!destModelPath.StartsWith(Path.GetFullPath(dataRoot)))
+        {
+            throw new ArgumentException($"Invalid destination path (outside data root): {destModelPath}");
+        }
 
         Directory.CreateDirectory(modelsDir);
-        File.Copy(sourceModelFilePath, destModelPath, overwrite: true);
+        File.Copy(fullSourcePath, destModelPath, overwrite: true);
 
         AppLogger.LogInformation("Model file copied to data root", new
         {
