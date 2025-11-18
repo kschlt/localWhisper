@@ -188,6 +188,99 @@
                     </StackPanel>
                 </Border>
 
+                <!-- POST-PROCESSING SECTION (Iteration 7) -->
+                <Border BorderBrush="#D1D1D1" BorderThickness="0,0,0,1" Padding="0,0,0,20" Margin="0,0,0,20">
+                    <StackPanel>
+                        <TextBlock Text="Post-Processing (KI-basierte Nachbearbeitung)" FontSize="14" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                        <!-- Enable Checkbox -->
+                        <CheckBox x:Name="PostProcessingEnabledCheckBox"
+                                  Content="Post-Processing aktivieren"
+                                  Margin="0,0,0,15"
+                                  Checked="PostProcessingEnabledCheckBox_Changed"
+                                  Unchecked="PostProcessingEnabledCheckBox_Changed"/>
+
+                        <!-- llama-cli.exe Path -->
+                        <TextBlock Text="llama-cli.exe Pfad:" Margin="0,0,0,5"/>
+                        <Grid Margin="0,0,0,15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="LlmCliPathTextBox"
+                                     Grid.Column="0"
+                                     Height="30"
+                                     VerticalContentAlignment="Center"
+                                     Margin="0,0,10,0"
+                                     TextChanged="SettingsChanged"/>
+                            <Button x:Name="BrowseLlmCliButton"
+                                    Grid.Column="1"
+                                    Content="_Durchsuchen"
+                                    Width="100"
+                                    Height="30"
+                                    Background="#0078D4"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Click="BrowseLlmCliButton_Click"/>
+                        </Grid>
+
+                        <!-- Llama Model Path -->
+                        <TextBlock Text="Llama Modell Pfad:" Margin="0,0,0,5"/>
+                        <Grid Margin="0,0,0,15">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="LlmModelPathTextBox"
+                                     Grid.Column="0"
+                                     Height="30"
+                                     VerticalContentAlignment="Center"
+                                     Margin="0,0,10,0"
+                                     TextChanged="SettingsChanged"/>
+                            <Button x:Name="BrowseLlmModelButton"
+                                    Grid.Column="1"
+                                    Content="_Durchsuchen"
+                                    Width="100"
+                                    Height="30"
+                                    Background="#0078D4"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Click="BrowseLlmModelButton_Click"/>
+                        </Grid>
+
+                        <!-- Glossary Checkbox -->
+                        <CheckBox x:Name="UseGlossaryCheckBox"
+                                  Content="Glossar verwenden"
+                                  Margin="0,0,0,10"
+                                  Checked="UseGlossaryCheckBox_Changed"
+                                  Unchecked="UseGlossaryCheckBox_Changed"/>
+
+                        <!-- Glossary Path -->
+                        <TextBlock x:Name="GlossaryPathLabel" Text="Glossar Pfad:" Margin="0,0,0,5"/>
+                        <Grid Margin="0,0,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="GlossaryPathTextBox"
+                                     Grid.Column="0"
+                                     Height="30"
+                                     VerticalContentAlignment="Center"
+                                     Margin="0,0,10,0"
+                                     TextChanged="SettingsChanged"/>
+                            <Button x:Name="BrowseGlossaryButton"
+                                    Grid.Column="1"
+                                    Content="_Durchsuchen"
+                                    Width="100"
+                                    Height="30"
+                                    Background="#0078D4"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Click="BrowseGlossaryButton_Click"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
             </StackPanel>
         </ScrollViewer>
 

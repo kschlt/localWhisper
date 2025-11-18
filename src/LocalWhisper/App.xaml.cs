@@ -27,6 +27,9 @@ public partial class App : Application
     private WhisperCLIAdapter? _whisperAdapter;
     private ClipboardWriter? _clipboardWriter;
     private HistoryWriter? _historyWriter;
+    private LlmPostProcessor? _llmPostProcessor;  // Iteration 7
+    private GlossaryLoader? _glossaryLoader;  // Iteration 7
+    private Dictionary<string, string>? _glossary;  // Iteration 7
     private readonly SemaphoreSlim _recordingSemaphore = new SemaphoreSlim(1, 1);
 
     /// <summary>
@@ -157,6 +160,20 @@ public partial class App : Application
             // 4.6. Initialize clipboard and history writers (Iteration 4)
             _clipboardWriter = new ClipboardWriter();
             _historyWriter = new HistoryWriter();
+
+            // 4.7. Initialize post-processing services (Iteration 7)
+            _llmPostProcessor = new LlmPostProcessor();
+            _glossaryLoader = new GlossaryLoader();
+
+            // Load glossary if enabled and path exists
+            if (_config.PostProcessing.UseGlossary && !string.IsNullOrWhiteSpace(_config.PostProcessing.GlossaryPath))
+            {
+                _glossary = _glossaryLoader.LoadGlossary(_config.PostProcessing.GlossaryPath);
+            }
+            else
+            {
+                _glossary = new Dictionary<string, string>();
+            }
 
             // 5. Initialize state machine
             _stateMachine = new StateMachine();
@@ -309,6 +326,49 @@ public partial class App : Application
                     return;
                 }
 
+                // Post-processing (Iteration 7: US-060, US-061, US-062)
+                string finalText = sttResult.Text;
+                bool postProcessed = false;
+
+                if (_config!.PostProcessing.Enabled)
+                {
+                    try
+                    {
+                        AppLogger.LogInformation("Starting LLM post-processing");
+                        _stateMachine.TransitionTo(AppState.PostProcessing);
+
+                        var ppStopwatch = Stopwatch.StartNew();
+                        finalText = await _llmPostProcessor!.ProcessAsync(
+                            sttResult.Text,
+                            _config.PostProcessing,
+                            _glossary
+                        );
+                        ppStopwatch.Stop();
+
+                        postProcessed = true;
+                        AppLogger.LogInformation("LLM post-processing succeeded", new
+                        {
+                            PostProcessing_Duration_Ms = ppStopwatch.ElapsedMilliseconds,
+                            InputLength = sttResult.Text.Length,
+                            OutputLength = finalText.Length
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        // Fallback to original text on any error (US-061)
+                        AppLogger.LogWarning("LLM post-processing failed - using original text", new
+                        {
+                            Error = ex.Message,
+                            ErrorType = ex.GetType().Name
+                        });
+
+                        finalText = sttResult.Text;
+                        postProcessed = false;
+
+                        FlyoutWindow.Show("⚠ Post-Processing fehlgeschlagen (Original-Text verwendet)", FlyoutWindow.FlyoutType.Warning);
+                    }
+                }
+
                 // Start E2E latency measurement (US-033)
                 var e2eStopwatch = Stopwatch.StartNew();
 
@@ -317,13 +377,13 @@ public partial class App : Application
                 try
                 {
                     var clipboardStopwatch = Stopwatch.StartNew();
-                    await _clipboardWriter!.WriteAsync(sttResult.Text);
+                    await _clipboardWriter!.WriteAsync(finalText);  // Use post-processed text
                     clipboardStopwatch.Stop();
                     clipboardSuccess = true;
 
                     AppLogger.LogInformation("Clipboard write succeeded", new
                     {
-                        TextLength = sttResult.Text.Length,
+                        TextLength = finalText.Length,
                         Clipboard_Write_Duration_Ms = clipboardStopwatch.ElapsedMilliseconds
                     });
                 }
@@ -345,11 +405,11 @@ public partial class App : Application
                     var historyEntry = new HistoryEntry
                     {
                         Created = DateTimeOffset.Now,
-                        Text = sttResult.Text,
+                        Text = finalText,  // Use post-processed text
                         Language = sttResult.Language,
                         SttModel = Path.GetFileName(_config!.Whisper.ModelPath),
                         DurationSeconds = sttResult.DurationSeconds,
-                        PostProcessed = false
+                        PostProcessed = postProcessed  // Set post-processing flag
                     };
 
                     var historyPath = await _historyWriter!.WriteAsync(historyEntry, _dataRoot!);

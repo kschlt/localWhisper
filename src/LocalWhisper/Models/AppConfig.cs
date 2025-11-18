@@ -8,6 +8,7 @@ namespace LocalWhisper.Models;
 /// Iteration 3: Added Whisper STT configuration.
 /// Iteration 5: Full schema (paths, history, postprocessing, logging).
 /// Iteration 6: Expanded schema for Settings (data_root, language, file_format).
+/// Iteration 7: Added PostProcessing configuration.
 ///
 /// See: docs/meta/placeholders-tracker.md (PH-003)
 /// See: docs/specification/data-structures.md (lines 49-110)
@@ -40,11 +41,15 @@ public class AppConfig
     /// </summary>
     public WhisperConfig? Whisper { get; set; }
 
+    /// <summary>
+    /// Post-Processing configuration (Iteration 7).
+    /// </summary>
+    public PostProcessingConfig PostProcessing { get; set; } = new();
+
     // Future iterations will add:
     // public AppMetadata App { get; set; } = new();
     // public PathsConfig Paths { get; set; } = new();
     // public HistoryConfig History { get; set; } = new();
-    // public PostProcessingConfig PostProcessing { get; set; } = new();
     // public LoggingConfig Logging { get; set; } = new();
 }
 

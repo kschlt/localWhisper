@@ -1,0 +1,81 @@
+<UserControl x:Class="LocalWhisper.UI.Wizard.PostProcessingStep"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="White">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="40,30">
+            <TextBlock Text="Post-Processing konfigurieren"
+                      FontSize="16"
+                      FontWeight="SemiBold"
+                      Margin="0,0,0,10"/>
+
+            <TextBlock Text="Verbessern Sie Transkripte automatisch mit KI-basierter Nachbearbeitung:"
+                      TextWrapping="Wrap"
+                      Margin="0,0,0,20"
+                      Foreground="#666666"/>
+
+            <!-- Enable Checkbox -->
+            <CheckBox x:Name="EnableCheckBox"
+                     Content="Post-Processing aktivieren (empfohlen)"
+                     FontWeight="SemiBold"
+                     IsChecked="True"
+                     Margin="0,0,0,20"
+                     Checked="EnableCheckBox_Changed"
+                     Unchecked="EnableCheckBox_Changed"/>
+
+            <!-- Description -->
+            <Border BorderBrush="#E0E0E0" BorderThickness="1" Background="#F5F5F5" Padding="15" Margin="0,0,0,15">
+                <StackPanel>
+                    <TextBlock Text="Was macht Post-Processing?" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock TextWrapping="Wrap" Foreground="#666666" Margin="0,0,0,5">
+                        • Korrigiert Grammatik, Zeichensetzung und Großschreibung
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Foreground="#666666" Margin="0,0,0,5">
+                        • Fügt Absätze und Formatierung hinzu
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Foreground="#666666" Margin="0,0,0,5">
+                        • Entfernt Füllwörter ("äh", "ähm")
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Foreground="#666666" Margin="0,0,0,5">
+                        • Bewahrt die ursprüngliche Bedeutung
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Foreground="#666666" Margin="0,10,0,0">
+                        • 100% lokal (keine Cloud-Verbindung)
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Download Info -->
+            <Border x:Name="DownloadInfoPanel"
+                    BorderBrush="#2196F3"
+                    BorderThickness="1"
+                    Background="#E3F2FD"
+                    Padding="15"
+                    Margin="0,0,0,15">
+                <StackPanel>
+                    <TextBlock Text="Download erforderlich:" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock TextWrapping="Wrap" Foreground="#1976D2" Margin="0,0,0,5">
+                        • llama-cli.exe (~50 MB) - KI-Engine
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Foreground="#1976D2" Margin="0,0,0,5">
+                        • Llama 3.2 3B Modell (~2 GB) - Sprachmodell
+                    </TextBlock>
+                    <TextBlock TextWrapping="Wrap" Foreground="#1976D2" Margin="0,10,0,0">
+                        Diese Dateien werden automatisch heruntergeladen, wenn Sie "Fertigstellen" klicken.
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
+            <!-- Performance Note -->
+            <Border BorderBrush="#FF9800" BorderThickness="1" Background="#FFF3E0" Padding="15">
+                <StackPanel>
+                    <TextBlock Text="💡 Hinweis:" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                    <TextBlock TextWrapping="Wrap" Foreground="#F57C00">
+                        Post-Processing funktioniert am besten mit einer GPU. CPU-Verarbeitung ist auch möglich, aber langsamer (~1-3 Sekunden statt &lt;1 Sekunde).
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
