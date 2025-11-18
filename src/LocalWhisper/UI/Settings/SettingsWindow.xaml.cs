@@ -690,7 +690,7 @@ public partial class SettingsWindow : Window
     /// <summary>
     /// Enter hotkey capture mode.
     /// </summary>
-    private void EnterHotkeyCaptureMode()
+    public void EnterHotkeyCaptureMode()
     {
         _isHotkeyCaptureMode = true;
         _capturedHotkey = string.Empty;
@@ -772,4 +772,5 @@ public partial class SettingsWindow : Window
     public string CurrentLanguage => _currentLanguage;
     public string CurrentFileFormat => _currentFileFormat;
     public string CurrentModelPath => _currentModelPath;
+    public bool IsHotkeyCaptureMode => _isHotkeyCaptureMode;
 }
