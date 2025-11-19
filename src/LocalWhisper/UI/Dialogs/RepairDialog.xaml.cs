@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using LocalWhisper.Core;
+using LocalWhisper.Models;
 using LocalWhisper.Services;
 using Ookii.Dialogs.Wpf;
 
