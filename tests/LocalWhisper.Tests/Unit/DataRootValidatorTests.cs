@@ -294,8 +294,8 @@ public class DataRootValidatorTests : IDisposable
             },
             Hotkey = new HotkeyConfig
             {
-                Modifiers = ModifierKeys.Control | ModifierKeys.Shift,
-                Key = Key.D
+                Modifiers = new List<string> { "Ctrl", "Shift" },
+                Key = "D"
             }
         };
     }

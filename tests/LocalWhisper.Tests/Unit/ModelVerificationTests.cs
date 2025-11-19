@@ -51,7 +51,7 @@ public class ModelVerificationTests : IDisposable
 
         // Mock ModelValidator to return valid
         var mockValidator = new Mock<ModelValidator>();
-        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>()))
+        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>(), null))
             .Returns((true, "Hash matches"));
         window.SetModelValidator(mockValidator.Object);
 
@@ -73,7 +73,7 @@ public class ModelVerificationTests : IDisposable
 
         // Mock ModelValidator to return invalid
         var mockValidator = new Mock<ModelValidator>();
-        mockValidator.Setup(v => v.ValidateModel(_invalidModelPath, It.IsAny<string>()))
+        mockValidator.Setup(v => v.ValidateModel(_invalidModelPath, It.IsAny<string>(), null))
             .Returns((false, "Hash mismatch"));
         window.SetModelValidator(mockValidator.Object);
 
@@ -111,7 +111,7 @@ public class ModelVerificationTests : IDisposable
 
         // Mock ModelValidator to return valid
         var mockValidator = new Mock<ModelValidator>();
-        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>()))
+        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>(), null))
             .Returns((true, "Hash matches"));
         window.SetModelValidator(mockValidator.Object);
 
@@ -132,7 +132,7 @@ public class ModelVerificationTests : IDisposable
 
         // Mock ModelValidator to return invalid
         var mockValidator = new Mock<ModelValidator>();
-        mockValidator.Setup(v => v.ValidateModel(_invalidModelPath, It.IsAny<string>()))
+        mockValidator.Setup(v => v.ValidateModel(_invalidModelPath, It.IsAny<string>(), null))
             .Returns((false, "Hash mismatch"));
         window.SetModelValidator(mockValidator.Object);
 
@@ -154,7 +154,7 @@ public class ModelVerificationTests : IDisposable
 
         // Mock ModelValidator
         var mockValidator = new Mock<ModelValidator>();
-        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>()))
+        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>(), null))
             .Returns((true, "Hash matches"));
         window.SetModelValidator(mockValidator.Object);
 
@@ -175,7 +175,7 @@ public class ModelVerificationTests : IDisposable
 
         // Mock ModelValidator
         var mockValidator = new Mock<ModelValidator>();
-        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>()))
+        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>(), null))
             .Returns((true, "Hash matches"));
         window.SetModelValidator(mockValidator.Object);
 
