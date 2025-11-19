@@ -1622,6 +1622,125 @@ Feature: First-Run Wizard - Post-Processing Setup
       """
 ```
 
+## US-065: Settings UI - Post-Processing Configuration (Simplified)
+
+```gherkin
+@Iter-7 @FR-022 @Priority-Low
+Feature: Settings UI - Post-Processing File Path Recovery
+  As a user who accidentally moved/deleted files after installation
+  I want to fix post-processing paths in Settings
+  So that I can restore functionality without reinstalling
+
+  Background:
+    Given the app is installed and configured
+    And the Settings window is open
+
+  @WindowsOnly @Manual
+  Scenario: Browse for llama-cli.exe (simple file picker)
+    Given I click "Durchsuchen" for llama-cli.exe path
+    When the file dialog opens
+    Then it should filter "All Files (*.*)"
+    And start in the directory of the current path (or Documents if empty)
+    When I select a file
+    Then the textbox should update with the selected path
+    And the Save button should be enabled
+
+  @WindowsOnly @Manual
+  Scenario: Browse for Llama model (simple file picker)
+    Given I click "Durchsuchen" for Llama model path
+    When the file dialog opens
+    Then it should filter "All Files (*.*)"
+    And start in the directory of the current path (or Documents if empty)
+    When I select a file
+    Then the textbox should update with the selected path
+    And the Save button should be enabled
+
+  @WindowsOnly @Manual
+  Scenario: Browse for glossary (simple file picker)
+    Given glossary is enabled
+    And I click "Durchsuchen" for glossary path
+    When the file dialog opens
+    Then it should filter "All Files (*.*)"
+    And start in the directory of the current path (or Documents if empty)
+    When I select a file
+    Then the textbox should update with the selected path
+    And the Save button should be enabled
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Save with valid paths (minimal validation)
+    Given I have changed post-processing paths
+    And all files exist (File.Exists returns true)
+    When I click "Speichern"
+    Then config.toml should be updated with new paths
+    And the Settings window should close
+    And no success message should be shown
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Save with missing llama-cli.exe
+    Given post-processing is enabled
+    And llama-cli.exe path does not exist
+    When I click "Speichern"
+    Then a MessageBox should appear with:
+      """
+      Post-Processing Dateien fehlen oder ungültig.
+
+      Bitte führen Sie den Ersteinrichtungs-Assistenten
+      erneut aus oder installieren Sie die Anwendung neu.
+      """
+    And config should NOT be saved
+    And the Settings window should remain open
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Save with missing Llama model
+    Given post-processing is enabled
+    And Llama model path does not exist
+    When I click "Speichern"
+    Then the error MessageBox should appear
+    And config should NOT be saved
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Save with missing glossary (if enabled)
+    Given post-processing is enabled
+    And glossary is enabled
+    And glossary path does not exist
+    When I click "Speichern"
+    Then the error MessageBox should appear
+    And config should NOT be saved
+
+  @Integration @CanRunInClaudeCode
+  Scenario: Glossary validation skipped if disabled
+    Given post-processing is enabled
+    And glossary is disabled (checkbox unchecked)
+    And glossary path does not exist
+    When I click "Speichern"
+    Then validation should NOT check glossary path
+    And config should be saved successfully
+
+  @Unit @CanRunInClaudeCode
+  Scenario: Text change marks form as dirty
+    Given the Settings window is open
+    When I manually type in any path textbox
+    Then the Save button should be enabled
+
+  @Manual @WindowsOnly
+  Scenario: All controls always enabled (no cascading disables)
+    Given the Settings window is open
+    When I uncheck "Post-Processing aktivieren"
+    Then all path textboxes should remain enabled
+    And all browse buttons should remain enabled
+    And glossary controls should remain enabled
+```
+
+**Implementation Notes:**
+- File dialogs: OpenFileDialog, filter "All Files (*.*)" only
+- Validation: File.Exists() only, no extension checks, no execution tests
+- No download buttons (wizard-only feature)
+- No hot reload (config applied on app restart)
+- No inline validation (only on Save)
+- No "restart required" message (implicit)
+- No success message on Save (just close window)
+- Keep it simple: Settings is a "last resort fix tool" for users who moved files
+
 ---
 
 # ITERATION 8: Stabilization + Reset + Logs
