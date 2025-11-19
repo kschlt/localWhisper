@@ -272,7 +272,8 @@ public partial class WizardWindow : Window
                 ModelFilePath!,
                 SelectedLanguage!,
                 HotkeyModifiers,
-                HotkeyKey);
+                HotkeyKey,
+                PostProcessingEnabled);
 
             AppLogger.LogInformation("Wizard completed successfully");
 
