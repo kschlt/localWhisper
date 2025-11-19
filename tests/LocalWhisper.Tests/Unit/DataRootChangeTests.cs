@@ -105,6 +105,11 @@ public class DataRootChangeTests : IDisposable
         var config = CreateDefaultConfig();
         config.Whisper = new WhisperConfig { ModelPath = Path.Combine(_validTestDataRoot, "models", "model.bin") };
 
+        // Create config.toml (required by validator)
+        var configPath = Path.Combine(_validTestDataRoot, "config", "config.toml");
+        File.WriteAllText(configPath, "[whisper]\nlanguage = \"de\"\nmodel_path = \"" +
+            config.Whisper.ModelPath.Replace("\\", "\\\\") + "\"\n\n[hotkey]\nmodifiers = 3\nkey = 33");
+
         // Create model file
         File.WriteAllText(config.Whisper.ModelPath, "dummy model content");
 

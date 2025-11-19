@@ -82,7 +82,7 @@ public class DataRootValidatorTests : IDisposable
 
         // Assert
         result.IsValid.Should().BeFalse("data root does not exist");
-        result.Errors.Should().Contain(e => e.Contains("does not exist"), "error should mention missing directory");
+        result.Errors.Should().Contain(e => e.Contains("nicht gefunden"), "error should mention missing directory");
     }
 
     [Fact]
@@ -97,7 +97,7 @@ public class DataRootValidatorTests : IDisposable
 
         // Assert
         result.IsValid.Should().BeFalse("config.toml is missing");
-        result.Errors.Should().Contain(e => e.Contains("config.toml not found"), "error should mention missing config");
+        result.Errors.Should().Contain(e => e.Contains("config.toml nicht gefunden"), "error should mention missing config");
     }
 
     [Fact]
@@ -112,7 +112,7 @@ public class DataRootValidatorTests : IDisposable
 
         // Assert
         result.IsValid.Should().BeFalse("model file is missing");
-        result.Errors.Should().Contain(e => e.Contains("Model file not found"), "error should mention missing model");
+        result.Errors.Should().Contain(e => e.Contains("Modelldatei nicht gefunden"), "error should mention missing model");
     }
 
     [Fact]

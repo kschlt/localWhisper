@@ -358,14 +358,11 @@ public partial class SettingsWindow : Window
             return;
         }
 
-        // Disable button during verification (ensure on UI thread)
-        Dispatcher.Invoke(() =>
-        {
-            VerifyModelButton.IsEnabled = false;
-            ModelStatusText.Text = "⏳ Verifiziere Modell...";
-            ModelStatusText.Foreground = System.Windows.Media.Brushes.Gray;
-            ModelStatusText.Visibility = Visibility.Visible;
-        });
+        // Disable button during verification
+        VerifyModelButton.IsEnabled = false;
+        ModelStatusText.Text = "⏳ Verifiziere Modell...";
+        ModelStatusText.Foreground = System.Windows.Media.Brushes.Gray;
+        ModelStatusText.Visibility = Visibility.Visible;
 
         try
         {
@@ -378,38 +375,30 @@ public partial class SettingsWindow : Window
                 _modelValidator.ValidateModel(_currentModelPath, "", progress)
             );
 
-            // User-friendly status (no technical hash details) - ensure on UI thread
-            Dispatcher.Invoke(() =>
+            // User-friendly status (no technical hash details)
+            // async/await automatically marshals back to UI thread
+            if (isValid || File.Exists(_currentModelPath))
             {
-                if (isValid || File.Exists(_currentModelPath))
-                {
-                    ModelStatusText.Text = "✓ Modell OK";
-                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Green;
-                    AppLogger.LogInformation("Model verification successful (SHA-1 computed)", new { ModelPath = _currentModelPath });
-                }
-                else
-                {
-                    ModelStatusText.Text = "⚠ Modell nicht gefunden oder beschädigt";
-                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
-                    AppLogger.LogWarning("Model verification failed", new { ModelPath = _currentModelPath, Message = message });
-                }
-            });
+                ModelStatusText.Text = "✓ Modell OK";
+                ModelStatusText.Foreground = System.Windows.Media.Brushes.Green;
+                AppLogger.LogInformation("Model verification successful (SHA-1 computed)", new { ModelPath = _currentModelPath });
+            }
+            else
+            {
+                ModelStatusText.Text = "⚠ Modell nicht gefunden oder beschädigt";
+                ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                AppLogger.LogWarning("Model verification failed", new { ModelPath = _currentModelPath, Message = message });
+            }
         }
         catch (Exception ex)
         {
-            Dispatcher.Invoke(() =>
-            {
-                ModelStatusText.Text = $"⚠ Fehler: {ex.Message}";
-                ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
-                AppLogger.LogError("Model verification error", ex, new { ModelPath = _currentModelPath });
-            });
+            ModelStatusText.Text = $"⚠ Fehler: {ex.Message}";
+            ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+            AppLogger.LogError("Model verification error", ex, new { ModelPath = _currentModelPath });
         }
         finally
         {
-            Dispatcher.Invoke(() =>
-            {
-                VerifyModelButton.IsEnabled = true;
-            });
+            VerifyModelButton.IsEnabled = true;
         }
 
         // Small delay for visual feedback
