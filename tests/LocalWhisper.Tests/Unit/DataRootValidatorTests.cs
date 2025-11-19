@@ -25,6 +25,7 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-05b-download-repair.md (Task 3)
 /// See: docs/specification/user-stories-gherkin.md (US-043, lines 872-895)
 /// </remarks>
+[Trait("Batch", "2")]
 public class DataRootValidatorTests : IDisposable
 {
     private readonly string _testDirectory;

@@ -16,6 +16,7 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-06-settings.md (TrayMenuTests section)
 /// See: docs/ui/settings-window-specification.md (Access section)
 /// </remarks>
+[Trait("Batch", "5")]
 public class TrayMenuTests
 {
     [Fact]

@@ -28,6 +28,7 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-05b-download-repair.md (Task 1)
 /// See: docs/specification/user-stories-gherkin.md (US-041b, lines 802-820)
 /// </remarks>
+[Trait("Batch", "4")]
 public class ModelDownloaderTests : IDisposable
 {
     private readonly string _testDirectory;

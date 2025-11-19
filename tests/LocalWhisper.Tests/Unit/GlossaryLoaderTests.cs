@@ -8,6 +8,7 @@ namespace LocalWhisper.Tests.Unit;
 /// Unit tests for GlossaryLoader service.
 /// Tests for US-063 (Glossary Support).
 /// </summary>
+[Trait("Batch", "4")]
 public class GlossaryLoaderTests : IDisposable
 {
     private readonly string _testDirectory;

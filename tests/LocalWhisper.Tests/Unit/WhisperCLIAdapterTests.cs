@@ -20,6 +20,7 @@ namespace LocalWhisper.Tests.Unit;
 ///
 /// See: docs/iterations/iteration-03-stt-whisper.md
 /// </remarks>
+[Trait("Batch", "1")]
 public class WhisperCLIAdapterTests : IDisposable
 {
     private readonly string _testDirectory;

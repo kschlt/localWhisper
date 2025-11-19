@@ -24,6 +24,7 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/specification/user-stories-gherkin.md (US-041a, lines 726-733)
 /// See: docs/reference/whisper-models.md (SHA-1 hashes)
 /// </remarks>
+[Trait("Batch", "4")]
 public class ModelValidatorTests : IDisposable
 {
     private readonly string _testDirectory;

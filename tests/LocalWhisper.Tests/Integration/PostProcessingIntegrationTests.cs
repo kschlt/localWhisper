@@ -10,6 +10,7 @@ namespace LocalWhisper.Tests.Integration;
 /// Integration tests for Post-Processing feature.
 /// Tests for US-061 (fallback), US-062 (meaning preservation), US-063 (glossary).
 /// </summary>
+[Trait("Batch", "6")]
 public class PostProcessingIntegrationTests : IDisposable
 {
     private readonly string _testDirectory;

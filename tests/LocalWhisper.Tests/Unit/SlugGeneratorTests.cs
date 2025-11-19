@@ -18,6 +18,7 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-04-clipboard-history-flyout.md (US-036)
 /// See: docs/specification/user-stories-gherkin.md (lines 611-652)
 /// </remarks>
+[Trait("Batch", "5")]
 public class SlugGeneratorTests
 {
     [Theory]

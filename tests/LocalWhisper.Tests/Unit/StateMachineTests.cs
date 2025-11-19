@@ -19,6 +19,7 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/specification/user-stories-gherkin.md (US-001, lines 34-75)
 /// See: docs/iterations/iteration-01-hotkey-skeleton.md
 /// </remarks>
+[Trait("Batch", "1")]
 public class StateMachineTests : IDisposable
 {
     private readonly string _testDirectory;

@@ -9,6 +9,7 @@ namespace LocalWhisper.Tests.Unit;
 /// Unit tests for StateMachine with PostProcessing state.
 /// Tests for US-060 (state machine integration).
 /// </summary>
+[Trait("Batch", "1")]
 public class StateMachinePostProcessingTests
 {
     [Fact]
