@@ -74,12 +74,14 @@ public class WizardManager
     /// <param name="language">Selected language (de/en)</param>
     /// <param name="hotkeyModifiers">Hotkey modifiers</param>
     /// <param name="hotkeyKey">Hotkey main key</param>
+    /// <param name="postProcessingEnabled">Enable post-processing (Iteration 7)</param>
     public void GenerateInitialConfig(
         string dataRoot,
         string sourceModelFilePath,
         string language,
         ModifierKeys hotkeyModifiers,
-        Key hotkeyKey)
+        Key hotkeyKey,
+        bool postProcessingEnabled = false)
     {
         // Check source file exists
         if (!File.Exists(sourceModelFilePath))
@@ -133,6 +135,9 @@ public class WizardManager
         // Create config
         var config = new AppConfig
         {
+            DataRoot = dataRoot,
+            Language = language,
+            FileFormat = ".md",
             Hotkey = new HotkeyConfig
             {
                 Modifiers = modifiers,
@@ -144,12 +149,27 @@ public class WizardManager
                 ModelPath = destModelPath, // Use destination path
                 Language = language,
                 TimeoutSeconds = 60
+            },
+            PostProcessing = new PostProcessingConfig
+            {
+                Enabled = postProcessingEnabled,
+                LlmCliPath = string.Empty,  // Configured later in Settings or via download
+                ModelPath = string.Empty,   // Configured later in Settings or via download
+                TimeoutSeconds = 5,
+                GpuAcceleration = true,
+                UseGlossary = false,
+                GlossaryPath = string.Empty,
+                Temperature = 0.0f,
+                TopP = 0.25f,
+                RepeatPenalty = 1.05f,
+                MaxTokens = 512
             }
         };
 
         // Validate
         config.Hotkey.Validate();
         config.Whisper.Validate();
+        // Note: PostProcessing validation skipped if disabled (paths can be empty)
 
         // Save
         var configPath = PathHelpers.GetConfigPath(dataRoot);

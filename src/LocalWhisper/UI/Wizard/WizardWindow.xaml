@@ -69,7 +69,7 @@
                 <TextBlock Text="→" FontSize="20" Margin="0,0,30,0" Foreground="#CCCCCC"/>
 
                 <!-- Step 3 -->
-                <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Margin="0,0,30,0">
                     <Ellipse x:Name="Step3Indicator"
                             Width="30"
                             Height="30"
@@ -77,7 +77,25 @@
                             Stroke="#CCCCCC"
                             StrokeThickness="2"/>
                     <TextBlock x:Name="Step3Text"
-                              Text="3. Hotkey"
+                              Text="3. Post-Proc"
+                              VerticalAlignment="Center"
+                              Margin="8,0,0,0"
+                              Foreground="#999999"/>
+                </StackPanel>
+
+                <!-- Arrow -->
+                <TextBlock Text="→" FontSize="20" Margin="0,0,30,0" Foreground="#CCCCCC"/>
+
+                <!-- Step 4 -->
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse x:Name="Step4Indicator"
+                            Width="30"
+                            Height="30"
+                            Fill="Transparent"
+                            Stroke="#CCCCCC"
+                            StrokeThickness="2"/>
+                    <TextBlock x:Name="Step4Text"
+                              Text="4. Hotkey"
                               VerticalAlignment="Center"
                               Margin="8,0,0,0"
                               Foreground="#999999"/>

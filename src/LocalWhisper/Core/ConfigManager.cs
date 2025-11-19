@@ -75,12 +75,32 @@ public static class ConfigManager
                 };
             }
 
+            // Parse [postprocessing] section (Iteration 7)
+            if (tomlTable.ContainsKey("postprocessing") && tomlTable["postprocessing"] is TomlTable ppTable)
+            {
+                config.PostProcessing = new PostProcessingConfig
+                {
+                    Enabled = ParseBool(ppTable, "enabled", false),
+                    LlmCliPath = ParseString(ppTable, "llm_cli_path", ""),
+                    ModelPath = ParseString(ppTable, "model_path", ""),
+                    TimeoutSeconds = ParseInt(ppTable, "timeout_seconds", 5),
+                    GpuAcceleration = ParseBool(ppTable, "gpu_acceleration", true),
+                    UseGlossary = ParseBool(ppTable, "use_glossary", false),
+                    GlossaryPath = ParseString(ppTable, "glossary_path", ""),
+                    Temperature = ParseFloat(ppTable, "temperature", 0.0f),
+                    TopP = ParseFloat(ppTable, "top_p", 0.25f),
+                    RepeatPenalty = ParseFloat(ppTable, "repeat_penalty", 1.05f),
+                    MaxTokens = ParseInt(ppTable, "max_tokens", 512)
+                };
+            }
+
             // Validate configuration
             config.Hotkey.Validate();
             if (config.Whisper != null)
             {
                 config.Whisper.Validate();
             }
+            config.PostProcessing.Validate();
 
             AppLogger.LogInformation("Config loaded successfully", new { ConfigPath = configPath });
             return config;
@@ -105,6 +125,7 @@ public static class ConfigManager
         {
             config.Whisper.Validate();
         }
+        config.PostProcessing.Validate();
 
         // Build TomlArray from modifiers list
         var modifiersArray = new TomlArray();
@@ -146,6 +167,22 @@ public static class ConfigManager
                 ["timeout_seconds"] = config.Whisper.TimeoutSeconds
             };
         }
+
+        // Add [postprocessing] section (Iteration 7)
+        tomlTable["postprocessing"] = new TomlTable
+        {
+            ["enabled"] = config.PostProcessing.Enabled,
+            ["llm_cli_path"] = config.PostProcessing.LlmCliPath,
+            ["model_path"] = config.PostProcessing.ModelPath,
+            ["timeout_seconds"] = config.PostProcessing.TimeoutSeconds,
+            ["gpu_acceleration"] = config.PostProcessing.GpuAcceleration,
+            ["use_glossary"] = config.PostProcessing.UseGlossary,
+            ["glossary_path"] = config.PostProcessing.GlossaryPath,
+            ["temperature"] = config.PostProcessing.Temperature,
+            ["top_p"] = config.PostProcessing.TopP,
+            ["repeat_penalty"] = config.PostProcessing.RepeatPenalty,
+            ["max_tokens"] = config.PostProcessing.MaxTokens
+        };
 
         // Serialize to TOML string
         var tomlContent = Toml.FromModel(tomlTable);
@@ -235,6 +272,38 @@ public static class ConfigManager
         if (table[key] is long longValue)
         {
             return (int)longValue;
+        }
+
+        return defaultValue;
+    }
+
+    private static bool ParseBool(TomlTable table, string key, bool defaultValue)
+    {
+        if (!table.ContainsKey(key))
+        {
+            return defaultValue;
+        }
+
+        return table[key] is bool boolValue ? boolValue : defaultValue;
+    }
+
+    private static float ParseFloat(TomlTable table, string key, float defaultValue)
+    {
+        if (!table.ContainsKey(key))
+        {
+            return defaultValue;
+        }
+
+        // TOML floats are stored as double
+        if (table[key] is double doubleValue)
+        {
+            return (float)doubleValue;
+        }
+
+        // Also support integers cast to float
+        if (table[key] is long longValue)
+        {
+            return (float)longValue;
         }
 
         return defaultValue;

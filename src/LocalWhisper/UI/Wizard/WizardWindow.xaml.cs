@@ -11,12 +11,14 @@ namespace LocalWhisper.UI.Wizard;
 /// First-run wizard window.
 /// </summary>
 /// <remarks>
-/// Implements US-040, US-041a, US-042: Wizard Steps 1-3
+/// Implements US-040, US-041a, US-042, US-064: Wizard Steps 1-4
 /// - Step 1: Data root selection
 /// - Step 2: Model verification (file selection)
-/// - Step 3: Hotkey configuration
+/// - Step 3: Post-Processing configuration (Iteration 7)
+/// - Step 4: Hotkey configuration
 ///
 /// See: docs/iterations/iteration-05a-wizard-core.md
+/// See: docs/iterations/iteration-07-post-processing-DECISIONS.md (Iteration 7)
 /// </remarks>
 public partial class WizardWindow : Window
 {
@@ -28,12 +30,14 @@ public partial class WizardWindow : Window
     public ModelDefinition? SelectedModel { get; private set; }
     public string? ModelFilePath { get; private set; }
     public string? SelectedLanguage { get; private set; }
+    public bool PostProcessingEnabled { get; private set; }  // Iteration 7
     public ModifierKeys HotkeyModifiers { get; private set; }
     public Key HotkeyKey { get; private set; }
 
     // Step controls
     private DataRootStep? _dataRootStep;
     private ModelSelectionStep? _modelSelectionStep;
+    private PostProcessingStep? _postProcessingStep;  // Iteration 7
     private HotkeyStep? _hotkeyStep;
 
     public WizardWindow()
@@ -55,8 +59,8 @@ public partial class WizardWindow : Window
 
         // Update button visibility
         BackButton.IsEnabled = _currentStep > 1;
-        NextButton.Visibility = _currentStep < 3 ? Visibility.Visible : Visibility.Collapsed;
-        FinishButton.Visibility = _currentStep == 3 ? Visibility.Visible : Visibility.Collapsed;
+        NextButton.Visibility = _currentStep < 4 ? Visibility.Visible : Visibility.Collapsed;
+        FinishButton.Visibility = _currentStep == 4 ? Visibility.Visible : Visibility.Collapsed;
 
         // Load step content
         switch (_currentStep)
@@ -82,6 +86,16 @@ public partial class WizardWindow : Window
                 break;
 
             case 3:
+                if (_postProcessingStep == null)
+                {
+                    _postProcessingStep = new PostProcessingStep();
+                    _postProcessingStep.EnabledChanged += (s, e) => { /* Optional: react to changes */ };
+                }
+                ContentArea.Content = _postProcessingStep;
+                NextButton.IsEnabled = _postProcessingStep.IsValid();
+                break;
+
+            case 4:
                 if (_hotkeyStep == null)
                 {
                     _hotkeyStep = new HotkeyStep();
@@ -131,7 +145,7 @@ public partial class WizardWindow : Window
             Step3Indicator.Fill = new SolidColorBrush(Color.FromRgb(76, 175, 80));
             Step3Indicator.Stroke = new SolidColorBrush(Color.FromRgb(76, 175, 80));
             Step3Text.Foreground = Brushes.Black;
-            Step3Text.FontWeight = FontWeights.SemiBold;
+            Step3Text.FontWeight = _currentStep == 3 ? FontWeights.SemiBold : FontWeights.Normal;
         }
         else
         {
@@ -139,6 +153,22 @@ public partial class WizardWindow : Window
             Step3Indicator.Stroke = new SolidColorBrush(Color.FromRgb(204, 204, 204));
             Step3Text.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153));
             Step3Text.FontWeight = FontWeights.Normal;
+        }
+
+        // Step 4
+        if (_currentStep >= 4)
+        {
+            Step4Indicator.Fill = new SolidColorBrush(Color.FromRgb(76, 175, 80));
+            Step4Indicator.Stroke = new SolidColorBrush(Color.FromRgb(76, 175, 80));
+            Step4Text.Foreground = Brushes.Black;
+            Step4Text.FontWeight = FontWeights.SemiBold;
+        }
+        else
+        {
+            Step4Indicator.Fill = Brushes.Transparent;
+            Step4Indicator.Stroke = new SolidColorBrush(Color.FromRgb(204, 204, 204));
+            Step4Text.Foreground = new SolidColorBrush(Color.FromRgb(153, 153, 153));
+            Step4Text.FontWeight = FontWeights.Normal;
         }
     }
 
@@ -198,6 +228,13 @@ public partial class WizardWindow : Window
 
             ShowStep(3);
         }
+        else if (_currentStep == 3 && _postProcessingStep != null)
+        {
+            // Step 3 is always valid (post-processing is optional)
+            PostProcessingEnabled = _postProcessingStep.IsPostProcessingEnabled;
+
+            ShowStep(4);
+        }
     }
 
     private void FinishButton_Click(object sender, RoutedEventArgs e)
@@ -235,7 +272,8 @@ public partial class WizardWindow : Window
                 ModelFilePath!,
                 SelectedLanguage!,
                 HotkeyModifiers,
-                HotkeyKey);
+                HotkeyKey,
+                PostProcessingEnabled);
 
             AppLogger.LogInformation("Wizard completed successfully");
 

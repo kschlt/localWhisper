@@ -65,7 +65,13 @@ public class WavValidatorTests : IDisposable
     {
         // Arrange
         var wavPath = Path.Combine(_testDirectory, "corrupted.wav");
-        File.WriteAllBytes(wavPath, new byte[] { 0x00, 0x01, 0x02, 0x03 }); // Invalid header
+        // Create 44-byte file with invalid RIFF header (should be "RIFF" but is "XXXX")
+        var corruptedData = new byte[44];
+        corruptedData[0] = (byte)'X'; // Invalid: should be 'R'
+        corruptedData[1] = (byte)'X'; // Invalid: should be 'I'
+        corruptedData[2] = (byte)'X'; // Invalid: should be 'F'
+        corruptedData[3] = (byte)'X'; // Invalid: should be 'F'
+        File.WriteAllBytes(wavPath, corruptedData);
 
         // Act
         var result = WavValidator.ValidateWavFile(wavPath, out var errorMessage);

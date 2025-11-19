@@ -34,6 +34,11 @@ public partial class SettingsWindow : Window
     private string _currentLanguage;
     private string _currentFileFormat;
     private string _currentModelPath;
+    private bool _currentPostProcessingEnabled;  // Iteration 7
+    private string _currentLlmCliPath;  // Iteration 7
+    private string _currentLlmModelPath;  // Iteration 7
+    private bool _currentUseGlossary;  // Iteration 7
+    private string _currentGlossaryPath;  // Iteration 7
 
     // Initial values (for change detection)
     private readonly string _initialHotkey;
@@ -41,6 +46,11 @@ public partial class SettingsWindow : Window
     private readonly string _initialLanguage;
     private readonly string _initialFileFormat;
     private readonly string _initialModelPath;
+    private readonly bool _initialPostProcessingEnabled;  // Iteration 7
+    private readonly string _initialLlmCliPath;  // Iteration 7
+    private readonly string _initialLlmModelPath;  // Iteration 7
+    private readonly bool _initialUseGlossary;  // Iteration 7
+    private readonly string _initialGlossaryPath;  // Iteration 7
 
     // Validation state
     private bool _hasHotkeyConflict;
@@ -72,6 +82,11 @@ public partial class SettingsWindow : Window
         _initialLanguage = config.Language;
         _initialFileFormat = config.FileFormat;
         _initialModelPath = config.Whisper?.ModelPath ?? string.Empty;
+        _initialPostProcessingEnabled = config.PostProcessing.Enabled;  // Iteration 7
+        _initialLlmCliPath = config.PostProcessing.LlmCliPath;  // Iteration 7
+        _initialLlmModelPath = config.PostProcessing.ModelPath;  // Iteration 7
+        _initialUseGlossary = config.PostProcessing.UseGlossary;  // Iteration 7
+        _initialGlossaryPath = config.PostProcessing.GlossaryPath;  // Iteration 7
 
         // Set current values
         _currentHotkey = _initialHotkey;
@@ -79,6 +94,11 @@ public partial class SettingsWindow : Window
         _currentLanguage = _initialLanguage;
         _currentFileFormat = _initialFileFormat;
         _currentModelPath = _initialModelPath;
+        _currentPostProcessingEnabled = _initialPostProcessingEnabled;  // Iteration 7
+        _currentLlmCliPath = _initialLlmCliPath;  // Iteration 7
+        _currentLlmModelPath = _initialLlmModelPath;  // Iteration 7
+        _currentUseGlossary = _initialUseGlossary;  // Iteration 7
+        _currentGlossaryPath = _initialGlossaryPath;  // Iteration 7
 
         // Populate UI
         LoadSettings();
@@ -130,6 +150,13 @@ public partial class SettingsWindow : Window
         {
             ModelPathText.Text = $"Pfad: {_currentModelPath}";
         }
+
+        // Post-Processing (Iteration 7)
+        PostProcessingEnabledCheckBox.IsChecked = _currentPostProcessingEnabled;
+        LlmCliPathTextBox.Text = _currentLlmCliPath;
+        LlmModelPathTextBox.Text = _currentLlmModelPath;
+        UseGlossaryCheckBox.IsChecked = _currentUseGlossary;
+        GlossaryPathTextBox.Text = _currentGlossaryPath;
     }
 
     /// <summary>
@@ -150,7 +177,12 @@ public partial class SettingsWindow : Window
                _currentDataRoot != _initialDataRoot ||
                _currentLanguage != _initialLanguage ||
                _currentFileFormat != _initialFileFormat ||
-               _currentModelPath != _initialModelPath;
+               _currentModelPath != _initialModelPath ||
+               _currentPostProcessingEnabled != _initialPostProcessingEnabled ||  // Iteration 7
+               _currentLlmCliPath != _initialLlmCliPath ||  // Iteration 7
+               _currentLlmModelPath != _initialLlmModelPath ||  // Iteration 7
+               _currentUseGlossary != _initialUseGlossary ||  // Iteration 7
+               _currentGlossaryPath != _initialGlossaryPath;  // Iteration 7
     }
 
     /// <summary>
@@ -406,6 +438,146 @@ public partial class SettingsWindow : Window
     }
 
     // =============================================================================
+    // EVENT HANDLERS - POST-PROCESSING SECTION (Iteration 7)
+    // =============================================================================
+
+    /// <summary>
+    /// Handle post-processing enabled checkbox changed event (US-065).
+    /// </summary>
+    private void PostProcessingEnabledCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        _currentPostProcessingEnabled = PostProcessingEnabledCheckBox.IsChecked == true;
+        UpdateSaveButtonState();
+    }
+
+    /// <summary>
+    /// Handle glossary checkbox changed event (US-065).
+    /// </summary>
+    private void UseGlossaryCheckBox_Changed(object sender, RoutedEventArgs e)
+    {
+        _currentUseGlossary = UseGlossaryCheckBox.IsChecked == true;
+        UpdateSaveButtonState();
+    }
+
+    /// <summary>
+    /// Handle browse button click for llama-cli.exe (US-065).
+    /// </summary>
+    private void BrowseLlmCliButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "llama-cli.exe wählen",
+            Filter = "All Files (*.*)|*.*",
+            CheckFileExists = true
+        };
+
+        // Set initial directory if current path exists
+        if (!string.IsNullOrEmpty(_currentLlmCliPath) && File.Exists(_currentLlmCliPath))
+        {
+            dialog.InitialDirectory = Path.GetDirectoryName(_currentLlmCliPath);
+        }
+        else if (!string.IsNullOrEmpty(_currentLlmCliPath))
+        {
+            var dir = Path.GetDirectoryName(_currentLlmCliPath);
+            if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
+            {
+                dialog.InitialDirectory = dir;
+            }
+        }
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            _currentLlmCliPath = dialog.FileName;
+            LlmCliPathTextBox.Text = dialog.FileName;
+            UpdateSaveButtonState();
+        }
+    }
+
+    /// <summary>
+    /// Handle browse button click for Llama model (US-065).
+    /// </summary>
+    private void BrowseLlmModelButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Llama Modell wählen",
+            Filter = "All Files (*.*)|*.*",
+            CheckFileExists = true
+        };
+
+        // Set initial directory if current path exists
+        if (!string.IsNullOrEmpty(_currentLlmModelPath) && File.Exists(_currentLlmModelPath))
+        {
+            dialog.InitialDirectory = Path.GetDirectoryName(_currentLlmModelPath);
+        }
+        else if (!string.IsNullOrEmpty(_currentLlmModelPath))
+        {
+            var dir = Path.GetDirectoryName(_currentLlmModelPath);
+            if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
+            {
+                dialog.InitialDirectory = dir;
+            }
+        }
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            _currentLlmModelPath = dialog.FileName;
+            LlmModelPathTextBox.Text = dialog.FileName;
+            UpdateSaveButtonState();
+        }
+    }
+
+    /// <summary>
+    /// Handle browse button click for glossary (US-065).
+    /// </summary>
+    private void BrowseGlossaryButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Glossar-Datei wählen",
+            Filter = "All Files (*.*)|*.*",
+            CheckFileExists = true
+        };
+
+        // Set initial directory if current path exists
+        if (!string.IsNullOrEmpty(_currentGlossaryPath) && File.Exists(_currentGlossaryPath))
+        {
+            dialog.InitialDirectory = Path.GetDirectoryName(_currentGlossaryPath);
+        }
+        else if (!string.IsNullOrEmpty(_currentGlossaryPath))
+        {
+            var dir = Path.GetDirectoryName(_currentGlossaryPath);
+            if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
+            {
+                dialog.InitialDirectory = dir;
+            }
+        }
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            _currentGlossaryPath = dialog.FileName;
+            GlossaryPathTextBox.Text = dialog.FileName;
+            UpdateSaveButtonState();
+        }
+    }
+
+    /// <summary>
+    /// Handle text changed event in any textbox (US-065).
+    /// </summary>
+    private void SettingsChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+    {
+        // Update current values from textboxes
+        if (LlmCliPathTextBox != null)
+            _currentLlmCliPath = LlmCliPathTextBox.Text ?? string.Empty;
+        if (LlmModelPathTextBox != null)
+            _currentLlmModelPath = LlmModelPathTextBox.Text ?? string.Empty;
+        if (GlossaryPathTextBox != null)
+            _currentGlossaryPath = GlossaryPathTextBox.Text ?? string.Empty;
+
+        UpdateSaveButtonState();
+    }
+
+    // =============================================================================
     // EVENT HANDLERS - SAVE/CANCEL
     // =============================================================================
 
@@ -416,6 +588,44 @@ public partial class SettingsWindow : Window
     {
         try
         {
+            // Validate post-processing paths (US-065 - minimal validation)
+            if (_currentPostProcessingEnabled)
+            {
+                if (!File.Exists(_currentLlmCliPath) || !File.Exists(_currentLlmModelPath))
+                {
+                    MessageBox.Show(
+                        "Post-Processing Dateien fehlen oder ungültig.\n\n" +
+                        "Bitte führen Sie den Ersteinrichtungs-Assistenten\n" +
+                        "erneut aus oder installieren Sie die Anwendung neu.",
+                        "Fehler",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error
+                    );
+                    AppLogger.LogWarning("Post-processing validation failed - missing files", new
+                    {
+                        LlmCliExists = File.Exists(_currentLlmCliPath),
+                        ModelExists = File.Exists(_currentLlmModelPath)
+                    });
+                    return; // Don't save
+                }
+
+                // Validate glossary if enabled
+                if (_currentUseGlossary && !File.Exists(_currentGlossaryPath))
+                {
+                    MessageBox.Show(
+                        "Glossar-Datei nicht gefunden.\n\nBitte wählen Sie eine gültige Datei.",
+                        "Fehler",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning
+                    );
+                    AppLogger.LogWarning("Glossary validation failed - file not found", new
+                    {
+                        GlossaryPath = _currentGlossaryPath
+                    });
+                    return; // Don't save
+                }
+            }
+
             // Build updated config
             var updatedConfig = BuildConfig();
 
@@ -497,8 +707,24 @@ public partial class SettingsWindow : Window
             Whisper = new WhisperConfig
             {
                 ModelPath = _currentModelPath,
-                CliPath = _initialConfig.Whisper?.CliPath ?? "whisper.exe",
-                Arguments = _initialConfig.Whisper?.Arguments ?? new List<string>()
+                CLIPath = _initialConfig.Whisper?.CLIPath ?? "whisper-cli",
+                Language = _initialConfig.Whisper?.Language ?? "de",
+                TimeoutSeconds = _initialConfig.Whisper?.TimeoutSeconds ?? 60
+            },
+            PostProcessing = new PostProcessingConfig  // Iteration 7
+            {
+                Enabled = _currentPostProcessingEnabled,
+                LlmCliPath = _currentLlmCliPath,
+                ModelPath = _currentLlmModelPath,
+                UseGlossary = _currentUseGlossary,
+                GlossaryPath = _currentGlossaryPath,
+                // Copy other settings from initial config
+                TimeoutSeconds = _initialConfig.PostProcessing.TimeoutSeconds,
+                GpuAcceleration = _initialConfig.PostProcessing.GpuAcceleration,
+                Temperature = _initialConfig.PostProcessing.Temperature,
+                TopP = _initialConfig.PostProcessing.TopP,
+                RepeatPenalty = _initialConfig.PostProcessing.RepeatPenalty,
+                MaxTokens = _initialConfig.PostProcessing.MaxTokens
             }
         };
 

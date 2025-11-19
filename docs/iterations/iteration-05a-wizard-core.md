@@ -2,9 +2,30 @@
 
 **Goal:** First-run wizard for initial setup (data root, model, hotkey)
 
-**Status:** Planned
-**Estimated Effort:** 4-6 hours
+**Status:** Planned (⚠️ Updated for Iteration 7 - See Note Below)
+**Estimated Effort:** 4-6 hours (original) + 1.5h (Iteration 7 wizard step addition)
 **Dependencies:** Iteration 1-4 complete
+
+---
+
+## ⚠️ IMPORTANT NOTE - Iteration 7 Wizard Extension
+
+**Post-Processing wizard step added in Iteration 7:**
+
+The wizard flow was extended to include post-processing setup. Original Iteration 5a implements Steps 1-3, but Step 3 is now numbered as Step 4.
+
+**Updated Flow (after Iteration 7):**
+```
+Step 1: Data Root Selection (Iteration 5a)
+Step 2: Whisper Model Selection (Iteration 5a)
+Step 3: Post-Processing Setup (Iteration 7) ← NEW
+        [ ] Enable Post-Processing (default: checked)
+        Downloads: llama-cli.exe + Llama 3.2 3B model (~2GB)
+Step 4: Hotkey Selection (Iteration 5a - renumbered from Step 3)
+```
+
+**See:** `docs/iterations/iteration-07-post-processing-DECISIONS.md` for Iteration 7 wizard step details.
+**New User Story:** US-064 (Wizard - Post-Processing Setup)
 
 ---
 

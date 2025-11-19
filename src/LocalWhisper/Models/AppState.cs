@@ -7,9 +7,12 @@ namespace LocalWhisper.Models;
 /// Valid state transitions:
 /// - Idle → Recording (hotkey down)
 /// - Recording → Processing (hotkey up)
-/// - Processing → Idle (processing complete)
+/// - Processing → PostProcessing (STT complete, if post-processing enabled)
+/// - Processing → Idle (STT complete, if post-processing disabled)
+/// - PostProcessing → Idle (post-processing complete)
 ///
 /// See: docs/iterations/iteration-01-hotkey-skeleton.md
+/// See: docs/iterations/iteration-07-post-processing-DECISIONS.md (Iteration 7)
 /// </remarks>
 public enum AppState
 {
@@ -26,5 +29,11 @@ public enum AppState
     /// <summary>
     /// Audio is being processed (STT transcription).
     /// </summary>
-    Processing
+    Processing,
+
+    /// <summary>
+    /// Transcript is being post-processed (LLM formatting).
+    /// Iteration 7: Added for post-processing feature.
+    /// </summary>
+    PostProcessing
 }

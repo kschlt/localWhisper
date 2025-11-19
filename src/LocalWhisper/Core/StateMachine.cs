@@ -9,13 +9,16 @@ namespace LocalWhisper.Core;
 /// Valid state transitions:
 /// - Idle → Recording (hotkey down)
 /// - Recording → Processing (hotkey up)
-/// - Processing → Idle (processing complete)
+/// - Processing → PostProcessing (STT complete, if post-processing enabled)
+/// - Processing → Idle (STT complete, if post-processing disabled)
+/// - PostProcessing → Idle (post-processing complete)
 ///
 /// Invalid transitions throw InvalidStateTransitionException.
 /// All state changes are logged and fire StateChanged event.
 ///
 /// See: US-001 (Hotkey Toggles State)
 /// See: docs/iterations/iteration-01-hotkey-skeleton.md
+/// See: docs/iterations/iteration-07-post-processing-DECISIONS.md (Iteration 7)
 /// </remarks>
 public class StateMachine
 {
@@ -82,7 +85,9 @@ public class StateMachine
         {
             (AppState.Idle, AppState.Recording) => true,
             (AppState.Recording, AppState.Processing) => true,
+            (AppState.Processing, AppState.PostProcessing) => true,  // Iteration 7
             (AppState.Processing, AppState.Idle) => true,
+            (AppState.PostProcessing, AppState.Idle) => true,  // Iteration 7
             _ => false
         };
     }

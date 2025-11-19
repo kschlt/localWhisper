@@ -1,9 +1,24 @@
 # ADR-0010: LLM Post-Processing Architecture
 
-**Status:** ✅ Accepted
-**Date:** 2025-11-18
+**Status:** ✅ Accepted & Finalized for Implementation
+**Date:** 2025-11-18 (Updated with final decisions)
 **Deciders:** Product Owner, Technical Lead
-**Related:** FR-022, US-060, US-061, US-062, ADR-0002 (CLI subprocess approach)
+**Related:** FR-022, US-060, US-061, US-062, US-063 (glossary), US-064 (wizard), ADR-0002 (CLI subprocess approach)
+
+---
+
+## Final Implementation Decisions (2025-11-18)
+
+All critical questions resolved:
+
+1. ✅ **llama-cli.exe:** Auto-download from llama.cpp GitHub releases on first use
+2. ✅ **Glossary:** Included in Iteration 7 (simple implementation via prompt injection)
+3. ✅ **Settings UI:** Standard level (Enable + paths + glossary checkbox)
+4. ✅ **State Machine:** New `PostProcessing` state added
+5. ✅ **Wizard Integration:** Llama model download in first-run wizard (default: enabled)
+6. ✅ **Config:** Extended with `[postprocessing]` section in config.toml
+
+See: `docs/iterations/iteration-07-post-processing-DECISIONS.md` for full details.
 
 ---
 
