@@ -48,7 +48,7 @@ public class DataRootChangeTests : IDisposable
             Directory.Delete(_invalidTestDataRoot, recursive: true);
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeDataRoot_ValidPath_UpdatesField()
     {
         // Arrange
@@ -64,7 +64,7 @@ public class DataRootChangeTests : IDisposable
         window.HasValidationErrors.Should().BeFalse("path is valid");
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeDataRoot_InvalidStructure_ShowsError()
     {
         // Arrange
@@ -81,7 +81,7 @@ public class DataRootChangeTests : IDisposable
         window.SaveButton.IsEnabled.Should().BeFalse("validation error exists");
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeDataRoot_NonExistent_ShowsError()
     {
         // Arrange
@@ -97,7 +97,7 @@ public class DataRootChangeTests : IDisposable
         window.SaveButton.IsEnabled.Should().BeFalse("validation error exists");
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeDataRoot_ValidatesUsingDataRootValidator()
     {
         // Arrange
@@ -116,7 +116,7 @@ public class DataRootChangeTests : IDisposable
         result.Errors.Should().BeEmpty();
     }
 
-    [Fact]
+    [StaFact]
     public void SaveDataRootChange_RequiresRestart()
     {
         // Arrange
@@ -131,7 +131,7 @@ public class DataRootChangeTests : IDisposable
         requiresRestart.Should().BeTrue("data root change requires restart");
     }
 
-    [Fact]
+    [StaFact]
     public void DataRootChange_UpdatesConfigCorrectly()
     {
         // Arrange

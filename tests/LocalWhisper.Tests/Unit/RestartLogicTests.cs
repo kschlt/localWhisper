@@ -23,7 +23,7 @@ public class RestartLogicTests
         LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
     }
 
-    [Fact]
+    [StaFact]
     public void SaveHotkeyChange_ShowsRestartDialog()
     {
         // Arrange
@@ -38,7 +38,7 @@ public class RestartLogicTests
         window.RestartDialogShown.Should().BeTrue("hotkey change requires restart");
     }
 
-    [Fact]
+    [StaFact]
     public void SaveLanguageChange_ShowsRestartDialog()
     {
         // Arrange
@@ -54,7 +54,7 @@ public class RestartLogicTests
         window.RestartDialogShown.Should().BeTrue("language change requires restart");
     }
 
-    [Fact]
+    [StaFact]
     public void SaveDataRootChange_ShowsRestartDialog()
     {
         // Arrange
@@ -83,7 +83,7 @@ public class RestartLogicTests
         }
     }
 
-    [Fact]
+    [StaFact]
     public void SaveFileFormatChange_NoRestartDialog()
     {
         // Arrange
@@ -99,7 +99,7 @@ public class RestartLogicTests
         window.RestartDialogShown.Should().BeFalse("file format change does NOT require restart");
     }
 
-    [Fact]
+    [StaFact]
     public void SaveMultipleChanges_OneRestartDialog()
     {
         // Arrange
@@ -118,7 +118,7 @@ public class RestartLogicTests
         restartDialogCount.Should().Be(1, "only ONE restart dialog should be shown");
     }
 
-    [Fact]
+    [StaFact]
     public void RestartDialog_Yes_RestartsApp()
     {
         // Arrange
@@ -137,7 +137,7 @@ public class RestartLogicTests
         restartCalled.Should().BeTrue("app restart should be triggered");
     }
 
-    [Fact]
+    [StaFact]
     public void RestartDialog_No_SavesButNoRestart()
     {
         // Arrange
@@ -157,7 +157,7 @@ public class RestartLogicTests
         window.IsClosed.Should().BeTrue("window should close");
     }
 
-    [Fact]
+    [StaFact]
     public void RequiresRestart_HotkeyChange_ReturnsTrue()
     {
         // Arrange
@@ -172,7 +172,7 @@ public class RestartLogicTests
         requiresRestart.Should().BeTrue();
     }
 
-    [Fact]
+    [StaFact]
     public void RequiresRestart_LanguageChange_ReturnsTrue()
     {
         // Arrange
@@ -188,7 +188,7 @@ public class RestartLogicTests
         requiresRestart.Should().BeTrue();
     }
 
-    [Fact]
+    [StaFact]
     public void RequiresRestart_FileFormatChange_ReturnsFalse()
     {
         // Arrange
@@ -204,7 +204,7 @@ public class RestartLogicTests
         requiresRestart.Should().BeFalse();
     }
 
-    [Fact]
+    [StaFact]
     public void RequiresRestart_ModelPathChange_ReturnsFalse()
     {
         // Arrange

@@ -26,7 +26,7 @@ public class TrayMenuTests
         LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
     }
 
-    [Fact]
+    [StaFact]
     public void RightClickTray_ShowsMenu()
     {
         // Arrange
@@ -41,7 +41,7 @@ public class TrayMenuTests
         contextMenu.Items.Count.Should().Be(3, "menu should have Settings, History, Exit");
     }
 
-    [Fact]
+    [StaFact]
     public void TrayMenu_HasCorrectMenuItems()
     {
         // Arrange
@@ -60,7 +60,7 @@ public class TrayMenuTests
         menuItemHeaders.Should().Contain("Beenden", "Exit menu item should exist");
     }
 
-    [Fact]
+    [StaFact]
     public void ClickSettings_OpensSettingsWindow()
     {
         // Arrange
@@ -79,7 +79,7 @@ public class TrayMenuTests
         openedWindow!.Title.Should().Contain("Einstellungen");
     }
 
-    [Fact]
+    [StaFact]
     public void ClickHistory_OpensExplorerToHistoryFolder()
     {
         // Arrange
@@ -97,7 +97,7 @@ public class TrayMenuTests
         openedPath.Should().Be(historyPath, "Explorer should open to history folder");
     }
 
-    [Fact]
+    [StaFact]
     public void ClickExit_ClosesApp()
     {
         // Arrange
@@ -114,7 +114,7 @@ public class TrayMenuTests
         exitCalled.Should().BeTrue("app exit should be triggered");
     }
 
-    [Fact]
+    [StaFact]
     public void TrayMenu_MenuOrder_IsCorrect()
     {
         // Arrange
@@ -131,7 +131,7 @@ public class TrayMenuTests
         menuItems[2].Header.ToString().Should().Be("Beenden", "third item should be Exit");
     }
 
-    [Fact]
+    [StaFact]
     public void OpenSettings_MultipleTimes_OnlyOneWindowOpen()
     {
         // Arrange
@@ -147,7 +147,7 @@ public class TrayMenuTests
         window1.Should().BeSameAs(window2, "should return same window instance if already open");
     }
 
-    [Fact]
+    [StaFact]
     public void HistoryMenuItem_DataRootNotConfigured_DisablesMenuItem()
     {
         // Arrange
@@ -164,7 +164,7 @@ public class TrayMenuTests
         historyMenuItem.IsEnabled.Should().BeFalse("History menu item should be disabled when data root is not configured");
     }
 
-    [Fact]
+    [StaFact]
     public void SettingsMenuItem_AlwaysEnabled()
     {
         // Arrange

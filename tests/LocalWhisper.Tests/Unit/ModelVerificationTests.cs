@@ -44,7 +44,7 @@ public class ModelVerificationTests : IDisposable
             Directory.Delete(_testDirectory, recursive: true);
     }
 
-    [Fact]
+    [StaFact]
     public void VerifyModel_ValidHash_ShowsSuccess()
     {
         // Arrange
@@ -66,7 +66,7 @@ public class ModelVerificationTests : IDisposable
         window.ModelStatusText.Foreground.Should().Be(System.Windows.Media.Brushes.Green);
     }
 
-    [Fact]
+    [StaFact]
     public void VerifyModel_InvalidHash_ShowsError()
     {
         // Arrange
@@ -88,7 +88,7 @@ public class ModelVerificationTests : IDisposable
         window.ModelStatusText.Foreground.Should().Be(System.Windows.Media.Brushes.Red);
     }
 
-    [Fact]
+    [StaFact]
     public void VerifyModel_ShowsProgressDialog()
     {
         // Arrange
@@ -105,7 +105,7 @@ public class ModelVerificationTests : IDisposable
         progressShown.Should().BeTrue("progress dialog should be shown during verification");
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeModel_ValidFile_UpdatesPath()
     {
         // Arrange
@@ -126,7 +126,7 @@ public class ModelVerificationTests : IDisposable
         window.ModelPathText.Text.Should().Contain(_validModelPath);
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeModel_InvalidHash_ShowsError()
     {
         // Arrange
@@ -148,7 +148,7 @@ public class ModelVerificationTests : IDisposable
         window.SaveButton.IsEnabled.Should().BeFalse("validation error exists");
     }
 
-    [Fact]
+    [StaFact]
     public void SaveModelChange_NoRestartRequired()
     {
         // Arrange
@@ -169,7 +169,7 @@ public class ModelVerificationTests : IDisposable
         requiresRestart.Should().BeFalse("model path change does NOT require restart");
     }
 
-    [Fact]
+    [StaFact]
     public void ModelPathChange_UpdatesConfigCorrectly()
     {
         // Arrange

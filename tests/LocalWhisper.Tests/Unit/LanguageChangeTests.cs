@@ -23,7 +23,7 @@ public class LanguageChangeTests
         LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeLanguage_GermanToEnglish_UpdatesConfig()
     {
         // Arrange
@@ -40,7 +40,7 @@ public class LanguageChangeTests
         window.CurrentLanguage.Should().Be("en");
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeLanguage_EnglishToGerman_UpdatesConfig()
     {
         // Arrange
@@ -57,7 +57,7 @@ public class LanguageChangeTests
         window.CurrentLanguage.Should().Be("de");
     }
 
-    [Fact]
+    [StaFact]
     public void SaveLanguageChange_RequiresRestart()
     {
         // Arrange
@@ -73,7 +73,7 @@ public class LanguageChangeTests
         requiresRestart.Should().BeTrue("language change requires restart");
     }
 
-    [Fact]
+    [StaFact]
     public void LanguageChange_EnablesSaveButton()
     {
         // Arrange
@@ -89,7 +89,7 @@ public class LanguageChangeTests
         window.SaveButton.IsEnabled.Should().BeTrue("change detected");
     }
 
-    [Fact]
+    [StaFact]
     public void LanguageRadioButtons_AreExclusive()
     {
         // Arrange
@@ -106,7 +106,7 @@ public class LanguageChangeTests
         window.LanguageGerman.IsChecked.Should().BeFalse("only one can be selected");
     }
 
-    [Fact]
+    [StaFact]
     public void InitialLanguage_German_SelectsCorrectRadioButton()
     {
         // Arrange
@@ -121,7 +121,7 @@ public class LanguageChangeTests
         window.LanguageEnglish.IsChecked.Should().BeFalse();
     }
 
-    [Fact]
+    [StaFact]
     public void InitialLanguage_English_SelectsCorrectRadioButton()
     {
         // Arrange
