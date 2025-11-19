@@ -34,7 +34,8 @@ public class WizardManagerTests : IDisposable
         Directory.CreateDirectory(_testDirectory);
         _manager = new WizardManager();
 
-        AppLogger.Initialize(_testDirectory);
+        // Initialize with Error level to reduce test output verbosity
+        AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
     }
 
     public void Dispose()

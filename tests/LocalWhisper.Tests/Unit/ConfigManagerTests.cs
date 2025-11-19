@@ -32,8 +32,8 @@ public class ConfigManagerTests : IDisposable
         Directory.CreateDirectory(_testDirectory);
         _testConfigPath = Path.Combine(_testDirectory, "config.toml");
 
-        // Initialize AppLogger for tests
-        AppLogger.Initialize(_testDirectory);
+        // Initialize AppLogger for tests with Error level to reduce test output verbosity
+        AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
     }
 
     public void Dispose()

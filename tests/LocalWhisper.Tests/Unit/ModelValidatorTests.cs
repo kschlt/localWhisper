@@ -36,7 +36,8 @@ public class ModelValidatorTests : IDisposable
         Directory.CreateDirectory(_testDirectory);
         _validator = new ModelValidator();
 
-        AppLogger.Initialize(_testDirectory);
+        // Initialize with Error level to reduce test output verbosity
+        AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
     }
 
     public void Dispose()

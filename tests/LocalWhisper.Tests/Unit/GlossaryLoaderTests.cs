@@ -1,5 +1,6 @@
 using FluentAssertions;
 using LocalWhisper.Services;
+using Serilog.Events;
 using Xunit;
 
 namespace LocalWhisper.Tests.Unit;
@@ -17,6 +18,8 @@ public class GlossaryLoaderTests : IDisposable
     {
         _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisper_GlossaryTests_" + Guid.NewGuid());
         Directory.CreateDirectory(_testDirectory);
+        // Initialize with Error level to reduce test output verbosity
+        LocalWhisper.Core.AppLogger.Initialize(_testDirectory, LogEventLevel.Error);
     }
 
     public void Dispose()
