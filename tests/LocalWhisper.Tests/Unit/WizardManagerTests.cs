@@ -227,8 +227,8 @@ public class WizardManagerTests : IDisposable
         var configPath = Path.Combine(dataRoot, "config", "config.toml");
         var config = ConfigManager.Load(configPath);
 
-        config.Hotkey.Modifiers.Should().Be(ModifierKeys.Control | ModifierKeys.Alt);
-        config.Hotkey.Key.Should().Be(Key.V);
+        config.Hotkey.Modifiers.Should().BeEquivalentTo(new List<string> { "Ctrl", "Alt" });
+        config.Hotkey.Key.Should().Be("V");
     }
 
     [Fact]

@@ -27,21 +27,4 @@
     <ProjectReference Include="..\..\src\LocalWhisper\LocalWhisper.csproj" />
   </ItemGroup>
 
-  <!-- Temporarily exclude obsolete Iteration 6 tests that reference non-existent SettingsWindow implementation details -->
-  <ItemGroup>
-    <Compile Remove="Unit\DataRootChangeTests.cs" />
-    <Compile Remove="Unit\FileFormatChangeTests.cs" />
-    <Compile Remove="Unit\HotkeyChangeTests.cs" />
-    <Compile Remove="Unit\LanguageChangeTests.cs" />
-    <Compile Remove="Unit\ModelVerificationTests.cs" />
-    <Compile Remove="Unit\RestartLogicTests.cs" />
-    <Compile Remove="Unit\SettingsPersistenceTests.cs" />
-    <Compile Remove="Unit\SettingsWindowTests.cs" />
-    <Compile Remove="Unit\TrayMenuTests.cs" />
-    <Compile Remove="Unit\DataRootValidatorTests.cs" />
-    <Compile Remove="Unit\WizardManagerTests.cs" />
-    <Compile Remove="Unit\StateMachinePostProcessingTests.cs" />
-    <Compile Remove="Integration\DataRootValidationIntegrationTests.cs" />
-  </ItemGroup>
-
 </Project>

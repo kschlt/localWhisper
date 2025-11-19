@@ -24,7 +24,7 @@ public class StateMachinePostProcessingTests
         stateMachine.TransitionTo(AppState.PostProcessing);
 
         // Assert
-        stateMachine.CurrentState.Should().Be(AppState.PostProcessing);
+        stateMachine.State.Should().Be(AppState.PostProcessing);
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public class StateMachinePostProcessingTests
         stateMachine.TransitionTo(AppState.Idle);
 
         // Assert
-        stateMachine.CurrentState.Should().Be(AppState.Idle);
+        stateMachine.State.Should().Be(AppState.Idle);
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public class StateMachinePostProcessingTests
         stateMachine.TransitionTo(AppState.Idle);
 
         // Assert
-        stateMachine.CurrentState.Should().Be(AppState.Idle);
+        stateMachine.State.Should().Be(AppState.Idle);
     }
 
     [Fact]

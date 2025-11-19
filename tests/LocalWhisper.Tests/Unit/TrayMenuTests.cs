@@ -24,14 +24,14 @@ public class TrayMenuTests
     {
         // Arrange
         var mockStateMachine = new Mock<StateMachine>();
-        var trayManager = new TrayIconManager(mockStateMachine.Object);
+        var trayManager = new TrayIconManager(mockStateMachine.Object, "C:\\Test\\config.toml", "C:\\Test\\Data");
 
         // Act
         var contextMenu = trayManager.GetContextMenu();
 
         // Assert
         contextMenu.Should().NotBeNull();
-        contextMenu.Items.Should().HaveCount(3, "menu should have Settings, History, Exit");
+        contextMenu.Items.Count.Should().Be(3, "menu should have Settings, History, Exit");
     }
 
     [Fact]
@@ -39,7 +39,7 @@ public class TrayMenuTests
     {
         // Arrange
         var mockStateMachine = new Mock<StateMachine>();
-        var trayManager = new TrayIconManager(mockStateMachine.Object);
+        var trayManager = new TrayIconManager(mockStateMachine.Object, "C:\\Test\\config.toml", "C:\\Test\\Data");
 
         // Act
         var contextMenu = trayManager.GetContextMenu();
@@ -58,7 +58,7 @@ public class TrayMenuTests
     {
         // Arrange
         var mockStateMachine = new Mock<StateMachine>();
-        var trayManager = new TrayIconManager(mockStateMachine.Object);
+        var trayManager = new TrayIconManager(mockStateMachine.Object, "C:\\Test\\config.toml", "C:\\Test\\Data");
         var config = CreateDefaultConfig();
 
         SettingsWindow? openedWindow = null;
@@ -77,7 +77,7 @@ public class TrayMenuTests
     {
         // Arrange
         var mockStateMachine = new Mock<StateMachine>();
-        var trayManager = new TrayIconManager(mockStateMachine.Object);
+        var trayManager = new TrayIconManager(mockStateMachine.Object, "C:\\Test\\config.toml", "C:\\Test\\Data");
         var historyPath = "C:\\Test\\Data\\history";
 
         string? openedPath = null;
@@ -95,7 +95,7 @@ public class TrayMenuTests
     {
         // Arrange
         var mockStateMachine = new Mock<StateMachine>();
-        var trayManager = new TrayIconManager(mockStateMachine.Object);
+        var trayManager = new TrayIconManager(mockStateMachine.Object, "C:\\Test\\config.toml", "C:\\Test\\Data");
 
         var exitCalled = false;
         trayManager.OnExitRequested += () => exitCalled = true;
@@ -112,7 +112,7 @@ public class TrayMenuTests
     {
         // Arrange
         var mockStateMachine = new Mock<StateMachine>();
-        var trayManager = new TrayIconManager(mockStateMachine.Object);
+        var trayManager = new TrayIconManager(mockStateMachine.Object, "C:\\Test\\config.toml", "C:\\Test\\Data");
 
         // Act
         var contextMenu = trayManager.GetContextMenu();
@@ -129,7 +129,7 @@ public class TrayMenuTests
     {
         // Arrange
         var mockStateMachine = new Mock<StateMachine>();
-        var trayManager = new TrayIconManager(mockStateMachine.Object);
+        var trayManager = new TrayIconManager(mockStateMachine.Object, "C:\\Test\\config.toml", "C:\\Test\\Data");
         var config = CreateDefaultConfig();
 
         // Act
@@ -145,7 +145,7 @@ public class TrayMenuTests
     {
         // Arrange
         var mockStateMachine = new Mock<StateMachine>();
-        var trayManager = new TrayIconManager(mockStateMachine.Object);
+        var trayManager = new TrayIconManager(mockStateMachine.Object, "C:\\Test\\config.toml", "C:\\Test\\Data");
         trayManager.SetDataRoot(null); // No data root configured
 
         // Act
@@ -162,7 +162,7 @@ public class TrayMenuTests
     {
         // Arrange
         var mockStateMachine = new Mock<StateMachine>();
-        var trayManager = new TrayIconManager(mockStateMachine.Object);
+        var trayManager = new TrayIconManager(mockStateMachine.Object, "C:\\Test\\config.toml", "C:\\Test\\Data");
 
         // Act
         var contextMenu = trayManager.GetContextMenu();
