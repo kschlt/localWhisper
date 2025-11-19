@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text;
+using LocalWhisper.Core;
 
 namespace LocalWhisper.Services;
 

@@ -707,8 +707,9 @@ public partial class SettingsWindow : Window
             Whisper = new WhisperConfig
             {
                 ModelPath = _currentModelPath,
-                CliPath = _initialConfig.Whisper?.CliPath ?? "whisper.exe",
-                Arguments = _initialConfig.Whisper?.Arguments ?? new List<string>()
+                CLIPath = _initialConfig.Whisper?.CLIPath ?? "whisper-cli",
+                Language = _initialConfig.Whisper?.Language ?? "de",
+                TimeoutSeconds = _initialConfig.Whisper?.TimeoutSeconds ?? 60
             },
             PostProcessing = new PostProcessingConfig  // Iteration 7
             {

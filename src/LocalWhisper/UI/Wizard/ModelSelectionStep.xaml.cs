@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Navigation;
+using LocalWhisper.Core;
 using LocalWhisper.Models;
 using LocalWhisper.Services;
 using Microsoft.Win32;

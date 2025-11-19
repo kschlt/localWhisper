@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
+using LocalWhisper.Core;
 using LocalWhisper.Models;
 
 namespace LocalWhisper.Services;
