@@ -35,7 +35,8 @@ public class HistoryWriterTests : IDisposable
         // Initialize AppLogger with Error level to reduce test output verbosity
         LocalWhisper.Core.AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
 
-        _historyWriter = new HistoryWriter(_testDirectory);
+        // Create HistoryWriter instance (stateless service, no constructor parameters)
+        _historyWriter = new HistoryWriter();
     }
 
     public void Dispose()
