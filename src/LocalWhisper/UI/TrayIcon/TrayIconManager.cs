@@ -102,6 +102,12 @@ public class TrayIconManager : IDisposable
     /// </summary>
     private System.Drawing.Icon CreateIcon(AppState state)
     {
+        // Ensure we're on the UI thread (WPF objects require STA thread)
+        if (!_hiddenWindow.Dispatcher.CheckAccess())
+        {
+            return _hiddenWindow.Dispatcher.Invoke(() => CreateIcon(state));
+        }
+
         var iconGlyph = IconResources.GetStateIcon(state);
         var color = IconResources.GetStateColor(state);
 
