@@ -1,4 +1,5 @@
 using FluentAssertions;
+using LocalWhisper.Core;
 using LocalWhisper.Services;
 using System.Security.Cryptography;
 using System.Text;

@@ -108,7 +108,7 @@ key = ""D""
         };
 
         // Act
-        ConfigManager.Save(config, configPath);
+        ConfigManager.Save(configPath, config);
 
         // Assert
         var savedContent = File.ReadAllText(configPath);

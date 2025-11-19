@@ -1,4 +1,5 @@
 using FluentAssertions;
+using LocalWhisper.Core;
 using LocalWhisper.Models;
 using LocalWhisper.Services;
 using Moq;

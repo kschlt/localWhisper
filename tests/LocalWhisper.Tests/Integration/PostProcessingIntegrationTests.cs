@@ -156,7 +156,7 @@ fyi = for your information
         };
 
         // Act
-        ConfigManager.Save(originalConfig, configPath);
+        ConfigManager.Save(configPath, originalConfig);
         var loadedConfig = ConfigManager.Load(configPath);
 
         // Assert
