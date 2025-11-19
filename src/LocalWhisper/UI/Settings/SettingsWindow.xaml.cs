@@ -347,6 +347,14 @@ public partial class SettingsWindow : Window
     /// </summary>
     private async void VerifyModelButton_Click(object sender, RoutedEventArgs e)
     {
+        await VerifyModelAsync();
+    }
+
+    /// <summary>
+    /// Async model verification logic (testable).
+    /// </summary>
+    private async Task VerifyModelAsync()
+    {
         if (string.IsNullOrEmpty(_currentModelPath))
         {
             MessageBox.Show(
@@ -359,10 +367,13 @@ public partial class SettingsWindow : Window
         }
 
         // Disable button during verification
-        VerifyModelButton.IsEnabled = false;
-        ModelStatusText.Text = "⏳ Verifiziere Modell...";
-        ModelStatusText.Foreground = System.Windows.Media.Brushes.Gray;
-        ModelStatusText.Visibility = Visibility.Visible;
+        SetUI(() =>
+        {
+            VerifyModelButton.IsEnabled = false;
+            ModelStatusText.Text = "⏳ Verifiziere Modell...";
+            ModelStatusText.Foreground = System.Windows.Media.Brushes.Gray;
+            ModelStatusText.Visibility = Visibility.Visible;
+        });
 
         try
         {
@@ -376,33 +387,57 @@ public partial class SettingsWindow : Window
             );
 
             // User-friendly status (no technical hash details)
-            // async/await automatically marshals back to UI thread
-            if (isValid || File.Exists(_currentModelPath))
+            // Must use SetUI because test environment has no SynchronizationContext
+            SetUI(() =>
             {
-                ModelStatusText.Text = "✓ Modell OK";
-                ModelStatusText.Foreground = System.Windows.Media.Brushes.Green;
-                AppLogger.LogInformation("Model verification successful (SHA-1 computed)", new { ModelPath = _currentModelPath });
-            }
-            else
-            {
-                ModelStatusText.Text = "⚠ Modell nicht gefunden oder beschädigt";
-                ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
-                AppLogger.LogWarning("Model verification failed", new { ModelPath = _currentModelPath, Message = message });
-            }
+                if (isValid || File.Exists(_currentModelPath))
+                {
+                    ModelStatusText.Text = "✓ Modell OK";
+                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Green;
+                    AppLogger.LogInformation("Model verification successful (SHA-1 computed)", new { ModelPath = _currentModelPath });
+                }
+                else
+                {
+                    ModelStatusText.Text = "⚠ Modell nicht gefunden oder beschädigt";
+                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                    AppLogger.LogWarning("Model verification failed", new { ModelPath = _currentModelPath, Message = message });
+                }
+            });
         }
         catch (Exception ex)
         {
-            ModelStatusText.Text = $"⚠ Fehler: {ex.Message}";
-            ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
-            AppLogger.LogError("Model verification error", ex, new { ModelPath = _currentModelPath });
+            SetUI(() =>
+            {
+                ModelStatusText.Text = $"⚠ Fehler: {ex.Message}";
+                ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                AppLogger.LogError("Model verification error", ex, new { ModelPath = _currentModelPath });
+            });
         }
         finally
         {
-            VerifyModelButton.IsEnabled = true;
+            SetUI(() =>
+            {
+                VerifyModelButton.IsEnabled = true;
+            });
         }
 
         // Small delay for visual feedback
         await Task.Delay(500);
+    }
+
+    /// <summary>
+    /// Helper to safely update UI from any thread.
+    /// </summary>
+    private void SetUI(Action action)
+    {
+        if (Dispatcher.CheckAccess())
+        {
+            action();
+        }
+        else
+        {
+            Dispatcher.Invoke(action);
+        }
     }
 
     /// <summary>
@@ -1112,8 +1147,8 @@ public partial class SettingsWindow : Window
     /// </summary>
     internal void VerifyModel()
     {
-        // Synchronous wrapper for testing
-        VerifyModelButton_Click(this, new RoutedEventArgs());
+        // Synchronous wrapper for testing - wait for async operation to complete
+        VerifyModelAsync().GetAwaiter().GetResult();
     }
 
     /// <summary>

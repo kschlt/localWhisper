@@ -111,6 +111,12 @@ public class TrayIconManager : IDisposable
         var iconGlyph = IconResources.GetStateIcon(state);
         var color = IconResources.GetStateColor(state);
 
+        // Freeze brush to make it thread-safe for cross-thread access
+        if (color.CanFreeze && !color.IsFrozen)
+        {
+            color.Freeze();
+        }
+
         // Create bitmap with icon glyph
         var visual = new DrawingVisual();
         using (var context = visual.RenderOpen())
