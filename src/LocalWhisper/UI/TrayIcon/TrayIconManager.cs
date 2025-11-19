@@ -166,7 +166,9 @@ public class TrayIconManager : IDisposable
         // History menu item
         var historyItem = new MenuItem
         {
-            Header = "History"
+            Header = "History",
+            // Disable if data root is not configured (check mutable override first for tests)
+            IsEnabled = !string.IsNullOrEmpty(_mutableDataRoot ?? _dataRoot)
         };
         historyItem.Click += (s, e) => OpenHistoryFolder();
         menu.Items.Add(historyItem);
@@ -190,14 +192,15 @@ public class TrayIconManager : IDisposable
         return CreateContextMenu();
     }
 
+    // Mutable data root for testing
+    private string? _mutableDataRoot;
+
     /// <summary>
     /// Set data root path (for testing).
     /// </summary>
     internal void SetDataRoot(string? dataRoot)
     {
-        // This would require refactoring the class to make _dataRoot mutable
-        // For now, this is a placeholder for testing
-        // Real implementation would need to update the field and possibly recreate the menu
+        _mutableDataRoot = dataRoot;
     }
 
     /// <summary>
@@ -207,7 +210,12 @@ public class TrayIconManager : IDisposable
     {
         OnExitRequested?.Invoke();
         AppLogger.LogInformation("User requested application shutdown (via tray menu)");
-        Application.Current.Shutdown(0);
+
+        // Check if Application.Current is available (not available in test environments)
+        if (Application.Current != null)
+        {
+            Application.Current.Shutdown(0);
+        }
     }
 
     /// <summary>

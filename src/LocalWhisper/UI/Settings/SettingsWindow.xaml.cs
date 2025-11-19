@@ -56,6 +56,7 @@ public partial class SettingsWindow : Window
     private bool _hasHotkeyConflict; // Warning only (allows save)
     private bool _hasHotkeyError; // Validation error (blocks save)
     private bool _hasDataRootError;
+    private bool _hasModelError; // Model validation error (blocks save)
 
     // Hotkey capture state (US-057)
     private bool _isHotkeyCaptureMode;
@@ -63,7 +64,7 @@ public partial class SettingsWindow : Window
 
     // Validators
     private readonly DataRootValidator _dataRootValidator = new();
-    private readonly ModelValidator _modelValidator = new();
+    private ModelValidator _modelValidator = new();
 
     /// <summary>
     /// Initialize Settings window with current configuration.
@@ -189,7 +190,7 @@ public partial class SettingsWindow : Window
     /// <summary>
     /// Check if there are any validation errors (errors block save, warnings don't).
     /// </summary>
-    public bool HasValidationErrors => _hasHotkeyError || _hasDataRootError;
+    public bool HasValidationErrors => _hasHotkeyError || _hasDataRootError || _hasModelError;
 
     // =============================================================================
     // INTERNAL TEST PROPERTIES - For testability via InternalsVisibleTo
@@ -367,13 +368,10 @@ public partial class SettingsWindow : Window
         }
 
         // Disable button during verification
-        SetUI(() =>
-        {
-            VerifyModelButton.IsEnabled = false;
-            ModelStatusText.Text = "⏳ Verifiziere Modell...";
-            ModelStatusText.Foreground = System.Windows.Media.Brushes.Gray;
-            ModelStatusText.Visibility = Visibility.Visible;
-        });
+        VerifyModelButton.IsEnabled = false;
+        ModelStatusText.Text = "⏳ Verifiziere Modell...";
+        ModelStatusText.Foreground = System.Windows.Media.Brushes.Gray;
+        ModelStatusText.Visibility = Visibility.Visible;
 
         try
         {
@@ -387,57 +385,42 @@ public partial class SettingsWindow : Window
             );
 
             // User-friendly status (no technical hash details)
-            // Must use SetUI because test environment has no SynchronizationContext
-            SetUI(() =>
+            // await automatically marshals back to UI thread
+            if (isValid)
             {
-                if (isValid || File.Exists(_currentModelPath))
-                {
-                    ModelStatusText.Text = "✓ Modell OK";
-                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Green;
-                    AppLogger.LogInformation("Model verification successful (SHA-1 computed)", new { ModelPath = _currentModelPath });
-                }
-                else
-                {
-                    ModelStatusText.Text = "⚠ Modell nicht gefunden oder beschädigt";
-                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
-                    AppLogger.LogWarning("Model verification failed", new { ModelPath = _currentModelPath, Message = message });
-                }
-            });
+                ModelStatusText.Text = "✓ Modell OK";
+                ModelStatusText.Foreground = System.Windows.Media.Brushes.Green;
+                AppLogger.LogInformation("Model verification successful (SHA-1 computed)", new { ModelPath = _currentModelPath });
+            }
+            else if (!File.Exists(_currentModelPath))
+            {
+                ModelStatusText.Text = "⚠ Modell nicht gefunden oder beschädigt";
+                ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                AppLogger.LogWarning("Model verification failed", new { ModelPath = _currentModelPath, Message = message });
+            }
+            else
+            {
+                ModelStatusText.Text = "⚠ Modell ungültig (Hash-Prüfung fehlgeschlagen)";
+                ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                _hasModelError = true;
+                AppLogger.LogWarning("Model hash validation failed", new { ModelPath = _currentModelPath, Message = message });
+            }
         }
         catch (Exception ex)
         {
-            SetUI(() =>
-            {
-                ModelStatusText.Text = $"⚠ Fehler: {ex.Message}";
-                ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
-                AppLogger.LogError("Model verification error", ex, new { ModelPath = _currentModelPath });
-            });
+            ModelStatusText.Text = $"⚠ Fehler: {ex.Message}";
+            ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+            AppLogger.LogError("Model verification error", ex, new { ModelPath = _currentModelPath });
         }
         finally
         {
-            SetUI(() =>
-            {
-                VerifyModelButton.IsEnabled = true;
-            });
+            VerifyModelButton.IsEnabled = true;
         }
+
+        UpdateSaveButtonState();
 
         // Small delay for visual feedback
         await Task.Delay(500);
-    }
-
-    /// <summary>
-    /// Helper to safely update UI from any thread.
-    /// </summary>
-    private void SetUI(Action action)
-    {
-        if (Dispatcher.CheckAccess())
-        {
-            action();
-        }
-        else
-        {
-            Dispatcher.Invoke(action);
-        }
     }
 
     /// <summary>
@@ -474,6 +457,7 @@ public partial class SettingsWindow : Window
             _currentModelPath = path;
             ModelPathText.Text = $"Pfad: {path}";
             ModelStatusText.Visibility = Visibility.Collapsed;
+            _hasModelError = false;
 
             AppLogger.LogInformation("Model path changed", new { NewPath = path });
             UpdateSaveButtonState();
@@ -1138,8 +1122,7 @@ public partial class SettingsWindow : Window
     /// </summary>
     internal void SetModelValidator(ModelValidator validator)
     {
-        // This is a placeholder for testing - in real implementation would need to refactor to use dependency injection
-        // For now, tests will need to work with the actual validator
+        _modelValidator = validator;
     }
 
     /// <summary>
