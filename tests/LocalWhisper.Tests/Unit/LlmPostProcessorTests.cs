@@ -172,7 +172,9 @@ public class LlmPostProcessorTests
         // Assert
         args.Should().Contain("-m \"C:\\Models\\llama.gguf\"");
         args.Should().Contain("-sys \"You are a formatter.\"");
-        args.Should().Contain("-p \"test transcript\"");
+        args.Should().Contain("-p \""); // Prompt flag present
+        args.Should().Contain("User: test transcript"); // Transcript wrapped in conversation format
+        args.Should().Contain("Assistant:"); // Completion trigger
         args.Should().Contain("--temp 0.0");
         args.Should().Contain("--top-p 0.25");
         args.Should().Contain("--repeat-penalty 1.05");

@@ -52,8 +52,8 @@ public static class SlugGenerator
         // 4. Replace spaces and underscores with hyphens
         normalized = Regex.Replace(normalized, @"[\s_]+", "-");
 
-        // 5. Remove all characters except alphanumeric and hyphens
-        normalized = Regex.Replace(normalized, @"[^a-z0-9\-]", "");
+        // 5. Replace all non-alphanumeric characters (except hyphens) with hyphens
+        normalized = Regex.Replace(normalized, @"[^a-z0-9\-]", "-");
 
         // 6. Compress multiple hyphens to single hyphen
         normalized = Regex.Replace(normalized, @"-+", "-");

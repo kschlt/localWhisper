@@ -71,9 +71,9 @@ public class HistoryWriterTests : IDisposable
         // Assert
         File.Exists(filePath).Should().BeTrue("history file should exist");
 
-        // Verify path structure matches: history/YYYY/YYYY-MM/YYYY-MM-DD/YYYYMMDD_HHmmssfff_{slug}.md
+        // Verify path structure matches: history\YYYY\YYYY-MM\YYYY-MM-DD\YYYYMMDD_HHmmssfff_{slug}.md (Windows paths)
         var relativePath = Path.GetRelativePath(_testDirectory, filePath);
-        relativePath.Should().MatchRegex(@"^history/\d{4}/\d{4}-\d{2}/\d{4}-\d{2}-\d{2}/\d{8}_\d{9}_.+\.md$",
+        relativePath.Should().MatchRegex(@"^history\\\d{4}\\\d{4}-\d{2}\\\d{4}-\d{2}-\d{2}\\\d{8}_\d{9}_.+\.md$",
             "path should match expected structure");
     }
 
@@ -153,9 +153,12 @@ public class HistoryWriterTests : IDisposable
     public async Task WriteAsync_DuplicateSlug_AppendsCounter()
     {
         // Arrange
+        // Use identical timestamps to ensure filename collision (to test duplicate handling)
+        var timestamp = new DateTimeOffset(2025, 9, 17, 14, 30, 22, 500, TimeSpan.Zero);
+
         var entry1 = new HistoryEntry
         {
-            Created = new DateTimeOffset(2025, 9, 17, 14, 30, 22, 500, TimeSpan.Zero),
+            Created = timestamp,
             Text = "Let me check on that",
             Language = "en",
             SttModel = "whisper-small",
@@ -164,7 +167,7 @@ public class HistoryWriterTests : IDisposable
 
         var entry2 = new HistoryEntry
         {
-            Created = new DateTimeOffset(2025, 9, 17, 14, 30, 22, 501, TimeSpan.Zero), // 1ms later
+            Created = timestamp, // SAME timestamp = same filename prefix
             Text = "Let me check on that", // Same text = same slug
             Language = "en",
             SttModel = "whisper-small",

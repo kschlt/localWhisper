@@ -50,15 +50,13 @@ public class AudioRecorderTests : IDisposable
         }
     }
 
-    [Fact]
+    [Fact(Skip = "Requires audio device - will fail in CI environment without hardware")]
     public void IsMicrophoneAvailable_ReturnsTrueWhenDevicePresent()
     {
         // Act
         var isAvailable = _audioRecorder.IsMicrophoneAvailable();
 
         // Assert
-        // Note: This test may fail in CI environment without audio device
-        // Mark as [Fact(Skip = "Requires audio device")] if needed
         isAvailable.Should().BeTrue("default audio input device should be available");
     }
 
@@ -212,7 +210,7 @@ public class AudioRecorderTests : IDisposable
 
         // Assert
         act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*not recording*", "stopping without starting should throw");
+            .WithMessage("*Not currently recording*", "stopping without starting should throw");
     }
 
     [Fact]

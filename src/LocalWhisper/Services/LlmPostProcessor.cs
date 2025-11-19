@@ -59,8 +59,8 @@ public class LlmPostProcessor
         // Remove trigger at start (with optional trailing punctuation/whitespace)
         var cleaned = Regex.Replace(text, @"^\s*markdown\s+mode\s*[.,;:]?\s*", "", RegexOptions.IgnoreCase);
 
-        // Remove trigger at end (with optional leading punctuation/whitespace)
-        cleaned = Regex.Replace(cleaned, @"\s*[.,;:]?\s*markdown\s+mode\s*$", "", RegexOptions.IgnoreCase);
+        // Remove trigger at end (require whitespace before trigger, optional punctuation after)
+        cleaned = Regex.Replace(cleaned, @"\s+markdown\s+mode\s*[.,;:]?\s*$", "", RegexOptions.IgnoreCase);
 
         return cleaned.Trim();
     }

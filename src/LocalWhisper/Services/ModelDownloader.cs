@@ -111,6 +111,12 @@ public class ModelDownloader
 
                 throw;
             }
+            catch (ModelDownloadException)
+            {
+                // Hash mismatch or model-specific errors should not retry
+                // (re-downloading won't fix a bad file on the server)
+                throw;
+            }
             catch (Exception ex)
             {
                 lastException = ex;

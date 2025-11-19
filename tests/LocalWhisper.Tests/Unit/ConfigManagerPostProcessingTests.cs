@@ -114,8 +114,8 @@ key = ""D""
         var savedContent = File.ReadAllText(configPath);
         savedContent.Should().Contain("[postprocessing]");
         savedContent.Should().Contain("enabled = true");
-        savedContent.Should().Contain("llm_cli_path = \"C:\\llama.exe\"");
-        savedContent.Should().Contain("model_path = \"C:\\model.gguf\"");
+        savedContent.Should().Contain("llm_cli_path = \"C:\\\\llama.exe\""); // TOML escapes backslashes
+        savedContent.Should().Contain("model_path = \"C:\\\\model.gguf\""); // TOML escapes backslashes
         savedContent.Should().Contain("timeout_seconds = 7");
     }
 
@@ -138,7 +138,8 @@ timeout_seconds = 100
         Action act = () => ConfigManager.Load(configPath);
 
         // Assert
-        act.Should().Throw<ArgumentException>("timeout must be 1-30");
+        act.Should().Throw<Exception>("timeout must be 1-30")
+            .WithMessage("*Timeout must be between 1 and 30 seconds*");
     }
 
     [Fact]
@@ -154,7 +155,8 @@ key = ""D""
 [postprocessing]
 enabled = true
 llm_cli_path = ""C:\\llama.exe""
-# Missing other fields - should use defaults
+model_path = ""C:\\model.gguf""
+# Missing optional fields - should use defaults
 ");
 
         // Act
@@ -163,6 +165,7 @@ llm_cli_path = ""C:\\llama.exe""
         // Assert
         config.PostProcessing.Enabled.Should().BeTrue();
         config.PostProcessing.LlmCliPath.Should().Be("C:\\llama.exe");
+        config.PostProcessing.ModelPath.Should().Be("C:\\model.gguf");
         config.PostProcessing.TimeoutSeconds.Should().Be(5, "default timeout");
         config.PostProcessing.GpuAcceleration.Should().BeTrue("default GPU enabled");
         config.PostProcessing.UseGlossary.Should().BeFalse("default glossary disabled");

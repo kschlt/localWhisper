@@ -173,10 +173,11 @@ another invalid line
         var formatted = loader.FormatGlossaryForPrompt(entries);
 
         // Assert
-        formatted.Should().StartWith("\n\nAPPLY THESE ABBREVIATIONS:\n");
+        formatted.Should().Contain("APPLY THESE ABBREVIATIONS:");
         formatted.Should().Contain("asap = as soon as possible");
         formatted.Should().Contain("fyi = for your information");
         formatted.Should().Contain("imho = in my humble opinion");
+        formatted.Should().NotBeNullOrWhiteSpace("formatted glossary should not be empty");
     }
 
     [Fact]

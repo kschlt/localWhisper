@@ -75,10 +75,17 @@ public class ModelValidator
     /// <param name="expectedHash">Expected SHA-1 hash (hexadecimal string)</param>
     /// <param name="progress">Optional progress callback (reports 0.0 to 1.0)</param>
     /// <returns>True if validation successful, false otherwise</returns>
+    /// <exception cref="FileNotFoundException">If model file does not exist</exception>
     public async Task<bool> ValidateAsync(string modelPath, string expectedHash, IProgress<double>? progress = null)
     {
         return await Task.Run(() =>
         {
+            // Check file exists first (throw if not - more appropriate than returning false)
+            if (!File.Exists(modelPath))
+            {
+                throw new FileNotFoundException($"Model file not found: {modelPath}", modelPath);
+            }
+
             var (isValid, _) = ValidateModel(modelPath, expectedHash, progress);
             return isValid;
         });
@@ -98,21 +105,21 @@ public class ModelValidator
         var fileSize = stream.Length;
         var buffer = new byte[81920]; // 80 KB buffer
         long totalRead = 0;
+        int bytesRead;
 
-        while (true)
+        while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) > 0)
         {
-            var bytesRead = stream.Read(buffer, 0, buffer.Length);
-            if (bytesRead == 0)
-                break;
-
             totalRead += bytesRead;
 
-            if (bytesRead == buffer.Length)
+            // Check if we've reached end of file (Position == Length after Read)
+            if (stream.Position < fileSize)
             {
+                // More data to come - use TransformBlock
                 sha1.TransformBlock(buffer, 0, bytesRead, null, 0);
             }
             else
             {
+                // Final block - use TransformFinalBlock
                 sha1.TransformFinalBlock(buffer, 0, bytesRead);
             }
 
@@ -122,6 +129,12 @@ public class ModelValidator
                 var progressPercent = (double)totalRead / fileSize;
                 progress.Report(progressPercent);
             }
+        }
+
+        // Handle empty files (totalRead == 0)
+        if (totalRead == 0)
+        {
+            sha1.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
         }
 
         var hash = sha1.Hash ?? Array.Empty<byte>();
