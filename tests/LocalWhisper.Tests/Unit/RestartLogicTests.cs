@@ -16,6 +16,14 @@ namespace LocalWhisper.Tests.Unit;
 [Trait("Batch", "5")]
 public class RestartLogicTests
 {
+    public RestartLogicTests()
+    {
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        var testDir = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_" + Guid.NewGuid());
+        Directory.CreateDirectory(testDir);
+        LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
+    }
+
     [Fact]
     public void SaveHotkeyChange_ShowsRestartDialog()
     {

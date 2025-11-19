@@ -12,6 +12,14 @@ namespace LocalWhisper.Tests.Unit;
 [Trait("Batch", "1")]
 public class StateMachinePostProcessingTests
 {
+    public StateMachinePostProcessingTests()
+    {
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        var testDir = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_" + Guid.NewGuid());
+        Directory.CreateDirectory(testDir);
+        LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
+    }
+
     [Fact]
     public void StateMachine_CanTransitionToPostProcessing()
     {

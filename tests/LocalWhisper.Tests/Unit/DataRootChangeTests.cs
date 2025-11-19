@@ -22,6 +22,11 @@ public class DataRootChangeTests : IDisposable
 
     public DataRootChangeTests()
     {
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        var testDir = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_" + Guid.NewGuid());
+        Directory.CreateDirectory(testDir);
+        LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
+
         // Create valid test data root structure
         _validTestDataRoot = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_Valid", Guid.NewGuid().ToString());
         Directory.CreateDirectory(Path.Combine(_validTestDataRoot, "config"));

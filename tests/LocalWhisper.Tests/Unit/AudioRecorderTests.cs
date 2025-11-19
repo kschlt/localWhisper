@@ -31,6 +31,9 @@ public class AudioRecorderTests : IDisposable
         _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisperTests", Guid.NewGuid().ToString());
         Directory.CreateDirectory(_testDirectory);
 
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        LocalWhisper.Core.AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
+
         // Initialize AudioRecorder
         _audioRecorder = new AudioRecorder();
     }

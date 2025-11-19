@@ -26,6 +26,8 @@ public class SettingsPersistenceTests : IDisposable
         _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_Persistence", Guid.NewGuid().ToString());
         Directory.CreateDirectory(_testDirectory);
         _testConfigPath = Path.Combine(_testDirectory, "config.toml");
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        LocalWhisper.Core.AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
     }
 
     public void Dispose()

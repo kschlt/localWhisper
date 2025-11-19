@@ -18,6 +18,8 @@ public class ConfigManagerPostProcessingTests : IDisposable
     {
         _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisper_ConfigTests_" + Guid.NewGuid());
         Directory.CreateDirectory(_testDirectory);
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        LocalWhisper.Core.AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
     }
 
     public void Dispose()

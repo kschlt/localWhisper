@@ -27,6 +27,9 @@ public class ModelVerificationTests : IDisposable
         _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_Models", Guid.NewGuid().ToString());
         Directory.CreateDirectory(_testDirectory);
 
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        LocalWhisper.Core.AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
+
         // Create valid model file (with known content for SHA-1 testing)
         _validModelPath = Path.Combine(_testDirectory, "ggml-valid.bin");
         File.WriteAllText(_validModelPath, "valid model content");

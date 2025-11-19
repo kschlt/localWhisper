@@ -17,6 +17,14 @@ namespace LocalWhisper.Tests.Unit;
 [Trait("Batch", "3")]
 public class SettingsWindowTests
 {
+    public SettingsWindowTests()
+    {
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        var testDir = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_" + Guid.NewGuid());
+        Directory.CreateDirectory(testDir);
+        LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
+    }
+
     [Fact]
     public void OpenSettings_LoadsCurrentConfig_PopulatesFields()
     {
