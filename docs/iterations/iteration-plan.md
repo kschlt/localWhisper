@@ -2,8 +2,8 @@
 
 **Purpose:** Complete implementation roadmap organized into vertical slices
 **Format:** 8 iterations, each delivering end-to-end value
-**Status:** Stable (v0.1 baseline)
-**Last Updated:** 2025-09-17
+**Status:** Iterations 1-7 Complete (85%), Iteration 8 Pending
+**Last Updated:** 2025-11-19
 
 ---
 
@@ -29,11 +29,11 @@ This project is organized into **8 iterations**, each implementing a vertical sl
 | [2](iteration-02-audio-recording.md) | Audio Recording | WASAPI recording, WAV file generation | 4-6h | ✅ Complete |
 | [3](iteration-03-stt-whisper.md) | STT Integration | Whisper CLI adapter, JSON parsing | 6-8h | ✅ Complete |
 | [4](iteration-04-clipboard-history-flyout.md) | Clipboard + History + Flyout | End-to-end dictation flow complete | 6-10h | ✅ Complete |
-| [5a](iteration-05a-wizard-core.md) | Wizard Core (File Selection) | Wizard UI, model verification (SHA-1), hotkey picker | 4-6h | 📋 Ready |
-| [5b](iteration-05b-download-repair.md) | Download + Repair | HTTP download, progress tracking, repair flow | 4-6h | 📋 Planned |
-| [6](iteration-06-settings.md) | Settings UI | Configuration panel | 4-6h | 📋 Planned |
-| [7](iteration-07-post-processing.md) | Optional Post-Processing | LLM integration (optional) | 4-6h | 📋 Planned |
-| [8](iteration-08-stabilization-reset.md) | Stabilization + Reset + Logs | Error handling, reset, performance verification | 6-10h | 📋 Planned |
+| [5a](iteration-05a-wizard-core.md) | Wizard Core (File Selection) | Wizard UI, model verification (SHA-1), hotkey picker | 4-6h | ✅ Complete |
+| [5b](iteration-05b-download-repair.md) | Download + Repair | HTTP download, progress tracking, repair flow | 4-6h | ✅ Complete |
+| [6](iteration-06-settings.md) | Settings UI | Configuration panel | 4-6h | ✅ Complete |
+| [7](iteration-07-post-processing.md) | Optional Post-Processing | LLM integration (optional) | 4-6h | ✅ Complete |
+| [8](iteration-08-stabilization-reset.md) | Stabilization + Reset + Logs | Error handling, reset, performance verification | 6-10h | 📋 Pending |
 
 **Total:** ~40-60 hours
 
@@ -48,16 +48,16 @@ Iteration 1 (Hotkey & State) ✅
   ├─→ Iteration 2 (Audio) ✅
   │     └─→ Iteration 3 (STT) ✅
   │           └─→ Iteration 4 (Clipboard/History/Flyout) ★ E2E Complete ✅
-  │                 ├─→ Iteration 5a (Wizard Core) 📋
-  │                 │     ├─→ Iteration 5b (Download/Repair) 📋
-  │                 │     └─→ Iteration 6 (Settings) 📋
-  │                 ├─→ Iteration 7 (Post-Processing) 📋
+  │                 ├─→ Iteration 5a (Wizard Core) ✅
+  │                 │     ├─→ Iteration 5b (Download/Repair) ✅
+  │                 │     └─→ Iteration 6 (Settings) ✅
+  │                 ├─→ Iteration 7 (Post-Processing) ✅
   │                 └─→ Iteration 8 (Stabilization) ★ v0.1 Release 📋
   │
   └─→ [All iterations depend on Iteration 1 foundational work]
 
 ★ Major milestones
-✅ Complete | 📋 Planned
+✅ Complete | 📋 Pending
 ```
 
 **Critical Path:** 1 → 2 → 3 → 4 → 5a → 5b → 8
@@ -123,11 +123,11 @@ Iteration 1 (Hotkey & State) ✅
 | 2 | US-010, US-011, US-012 | 3 | ✅ Complete |
 | 3 | US-020, US-021, US-022, US-023 | 4 | ✅ Complete |
 | 4 | US-030..036 | 7 | ✅ Complete |
-| 5a | US-040, US-041a, US-042, US-045, US-046 | 5 | 📋 Ready |
-| 5b | US-041b, US-043, US-044 | 3 | 📋 Planned |
-| 6 | US-050..059 | 10 | 📋 Ready |
-| 7 | US-060..064 | 5 | 📋 Ready (with glossary + wizard) |
-| 8 | US-070..076 | 7 | 📋 Planned |
+| 5a | US-040, US-041a, US-042, US-045, US-046 | 5 | ✅ Complete |
+| 5b | US-041b, US-043, US-044 | 3 | ✅ Complete |
+| 6 | US-050..059 | 10 | ✅ Complete |
+| 7 | US-060..064 | 5 | ✅ Complete |
+| 8 | US-070..076 | 7 | 📋 Pending |
 
 **Note:** US-041 was split into US-041a (file selection, Iteration 5a) and US-041b (HTTP download, Iteration 5b).
 
@@ -143,11 +143,11 @@ Iteration 1 (Hotkey & State) ✅
 | 2 | FR-011, FR-021, FR-023 | NFR-006 | ✅ Complete |
 | 3 | FR-012, FR-021, FR-023 | NFR-001 (partial), NFR-005, NFR-006 | ✅ Complete |
 | 4 | FR-013, FR-014, FR-015, FR-024, FR-023 | NFR-001, NFR-004, NFR-006 | ✅ Complete |
-| 5a | FR-016, FR-017 (file selection), FR-021, FR-023 | NFR-006 | 📋 Ready |
-| 5b | FR-017 (download), FR-016 (repair), FR-021, FR-023 | NFR-004, NFR-006 | 📋 Planned |
-| 6 | FR-020, FR-017, FR-023 | NFR-006 | 📋 Planned |
-| 7 | FR-022, FR-023 | NFR-006 | 📋 Planned |
-| 8 | FR-019, FR-021, FR-023 | NFR-001 (final), NFR-003, NFR-004, NFR-006 | 📋 Planned |
+| 5a | FR-016, FR-017 (file selection), FR-021, FR-023 | NFR-006 | ✅ Complete |
+| 5b | FR-017 (download), FR-016 (repair), FR-021, FR-023 | NFR-004, NFR-006 | ✅ Complete |
+| 6 | FR-020, FR-017, FR-023 | NFR-006 | ✅ Complete |
+| 7 | FR-022, FR-023 | NFR-006 | ✅ Complete |
+| 8 | FR-019, FR-021, FR-023 | NFR-001 (final), NFR-003, NFR-004, NFR-006 | 📋 Pending |
 
 **Total Coverage:** All 14 FRs and 6 NFRs addressed.
 
@@ -288,5 +288,24 @@ Each iteration has a dedicated file with:
 
 ---
 
-**Last updated:** 2025-09-17
-**Version:** v0.1 (Initial iteration plan)
+## Implementation Progress
+
+**Current Status as of 2025-11-19:**
+- **Iterations 1-7**: ✅ Complete (85% of total effort)
+- **Iteration 8**: 📋 Pending (Stabilization + Reset + Logs)
+- **Project Completion**: ~85% (34-48h of 40-60h estimated)
+
+**Milestone 1 (E2E Dictation)**: ✅ Achieved after Iteration 4
+**Milestone 2 (Complete Setup)**: ✅ Achieved after Iteration 5
+**Milestone 3 (v0.1 Release)**: 📋 Pending Iteration 8 completion
+
+**Next Steps:**
+1. Complete Iteration 8 (Stabilization + Reset + Logs)
+2. Verify all NFRs (especially NFR-001 p95 latency)
+3. Run full test suite regression
+4. Tag v0.1 release
+
+---
+
+**Last updated:** 2025-11-19
+**Version:** v0.2 (Reflects iterations 1-7 completion)
