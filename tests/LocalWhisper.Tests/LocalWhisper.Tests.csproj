@@ -27,4 +27,8 @@
     <ProjectReference Include="..\..\src\LocalWhisper\LocalWhisper.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
