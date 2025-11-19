@@ -114,11 +114,13 @@
 
                         <StackPanel Orientation="Horizontal">
                             <RadioButton x:Name="LanguageGerman"
+                                         x:FieldModifier="internal"
                                          Content="Deutsch"
                                          GroupName="Language"
                                          Margin="0,0,20,0"
                                          Checked="LanguageRadioButton_Checked"/>
                             <RadioButton x:Name="LanguageEnglish"
+                                         x:FieldModifier="internal"
                                          Content="English"
                                          GroupName="Language"
                                          Checked="LanguageRadioButton_Checked"/>
@@ -295,6 +297,7 @@
 
             <!-- Version Number -->
             <TextBlock x:Name="VersionText"
+                       x:FieldModifier="internal"
                        Grid.Column="0"
                        Text="v0.1.0"
                        VerticalAlignment="Center"
@@ -315,6 +318,7 @@
 
             <!-- Save Button -->
             <Button x:Name="SaveButton"
+                    x:FieldModifier="internal"
                     Grid.Column="3"
                     Content="_Speichern"
                     Width="100"

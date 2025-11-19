@@ -190,6 +190,25 @@ public partial class SettingsWindow : Window
     /// </summary>
     public bool HasValidationErrors => _hasHotkeyConflict || _hasDataRootError;
 
+    // =============================================================================
+    // INTERNAL TEST PROPERTIES - For testability via InternalsVisibleTo
+    // =============================================================================
+
+    /// <summary>Current hotkey value (for testing)</summary>
+    internal string CurrentHotkey => _currentHotkey;
+
+    /// <summary>Current data root value (for testing)</summary>
+    internal string CurrentDataRoot => _currentDataRoot;
+
+    /// <summary>Current language value (for testing)</summary>
+    internal string CurrentLanguage => _currentLanguage;
+
+    /// <summary>Current file format value (for testing)</summary>
+    internal string CurrentFileFormat => _currentFileFormat;
+
+    /// <summary>Current model path value (for testing)</summary>
+    internal string CurrentModelPath => _currentModelPath;
+
     /// <summary>
     /// Update Save button state based on changes and validation.
     /// </summary>
