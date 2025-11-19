@@ -21,6 +21,7 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-04-clipboard-history-flyout.md (US-031)
 /// See: docs/specification/user-stories-gherkin.md (lines 447-495)
 /// </remarks>
+[Trait("Batch", "5")]
 public class HistoryWriterTests : IDisposable
 {
     private readonly string _testDirectory;

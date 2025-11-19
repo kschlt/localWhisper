@@ -15,6 +15,7 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-06-settings.md (ModelVerificationTests section)
 /// See: docs/ui/settings-window-specification.md (Whisper Model Section)
 /// </remarks>
+[Trait("Batch", "4")]
 public class ModelVerificationTests : IDisposable
 {
     private readonly string _testDirectory;

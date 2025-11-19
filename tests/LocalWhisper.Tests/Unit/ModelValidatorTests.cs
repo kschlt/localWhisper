@@ -24,6 +24,7 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/specification/user-stories-gherkin.md (US-041a, lines 726-733)
 /// See: docs/reference/whisper-models.md (SHA-1 hashes)
 /// </remarks>
+[Trait("Batch", "4")]
 public class ModelValidatorTests : IDisposable
 {
     private readonly string _testDirectory;
@@ -35,7 +36,8 @@ public class ModelValidatorTests : IDisposable
         Directory.CreateDirectory(_testDirectory);
         _validator = new ModelValidator();
 
-        AppLogger.Initialize(_testDirectory);
+        // Initialize with Error level to reduce test output verbosity
+        AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
     }
 
     public void Dispose()

@@ -10,6 +10,7 @@ namespace LocalWhisper.Tests.Unit;
 /// Unit tests for LlmPostProcessor service.
 /// Tests for US-060, US-061, US-062 (Post-processing core logic).
 /// </summary>
+[Trait("Batch", "4")]
 public class LlmPostProcessorTests
 {
     private readonly string _testDirectory;

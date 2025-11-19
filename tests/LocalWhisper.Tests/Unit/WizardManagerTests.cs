@@ -22,6 +22,7 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-05a-wizard-core.md (Task 4)
 /// See: docs/specification/user-stories-gherkin.md (US-040, lines 686-697)
 /// </remarks>
+[Trait("Batch", "5")]
 public class WizardManagerTests : IDisposable
 {
     private readonly string _testDirectory;
@@ -33,7 +34,8 @@ public class WizardManagerTests : IDisposable
         Directory.CreateDirectory(_testDirectory);
         _manager = new WizardManager();
 
-        AppLogger.Initialize(_testDirectory);
+        // Initialize with Error level to reduce test output verbosity
+        AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
     }
 
     public void Dispose()

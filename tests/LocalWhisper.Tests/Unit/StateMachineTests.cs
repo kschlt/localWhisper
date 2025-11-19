@@ -19,6 +19,7 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/specification/user-stories-gherkin.md (US-001, lines 34-75)
 /// See: docs/iterations/iteration-01-hotkey-skeleton.md
 /// </remarks>
+[Trait("Batch", "1")]
 public class StateMachineTests : IDisposable
 {
     private readonly string _testDirectory;
@@ -28,7 +29,8 @@ public class StateMachineTests : IDisposable
         // Initialize AppLogger with temporary test directory
         _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisperTests", Guid.NewGuid().ToString());
         Directory.CreateDirectory(_testDirectory);
-        AppLogger.Initialize(_testDirectory);
+        // Initialize with Error level to reduce test output verbosity
+        AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
     }
 
     public void Dispose()

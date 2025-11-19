@@ -18,6 +18,7 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-02-audio-recording.md (US-011)
 /// See: docs/specification/user-stories-gherkin.md (lines 184-213)
 /// </remarks>
+[Trait("Batch", "1")]
 public class WavValidatorTests : IDisposable
 {
     private readonly string _testDirectory;

@@ -14,6 +14,7 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-06-settings.md (SettingsWindowTests section)
 /// See: docs/ui/settings-window-specification.md
 /// </remarks>
+[Trait("Batch", "3")]
 public class SettingsWindowTests
 {
     [Fact]

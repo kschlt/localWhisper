@@ -20,6 +20,7 @@ namespace LocalWhisper.Tests.Unit;
 ///
 /// See: docs/iterations/iteration-03-stt-whisper.md
 /// </remarks>
+[Trait("Batch", "1")]
 public class WhisperCLIAdapterTests : IDisposable
 {
     private readonly string _testDirectory;
@@ -31,8 +32,8 @@ public class WhisperCLIAdapterTests : IDisposable
         _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisperTests", Guid.NewGuid().ToString());
         Directory.CreateDirectory(_testDirectory);
 
-        // Initialize AppLogger for tests
-        AppLogger.Initialize(_testDirectory);
+        // Initialize AppLogger for tests with Error level to reduce test output verbosity
+        AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
 
         // Create test configuration
         _config = new WhisperConfig

@@ -8,6 +8,7 @@ namespace LocalWhisper.Tests.Unit;
 /// Unit tests for PostProcessingConfig model.
 /// Tests for US-060 (config structure).
 /// </summary>
+[Trait("Batch", "2")]
 public class PostProcessingConfigTests
 {
     [Fact]

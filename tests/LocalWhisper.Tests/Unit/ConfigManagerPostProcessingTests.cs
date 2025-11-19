@@ -9,6 +9,7 @@ namespace LocalWhisper.Tests.Unit;
 /// Unit tests for ConfigManager with PostProcessing configuration.
 /// Tests for US-060 (config parsing).
 /// </summary>
+[Trait("Batch", "2")]
 public class ConfigManagerPostProcessingTests : IDisposable
 {
     private readonly string _testDirectory;
