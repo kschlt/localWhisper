@@ -10,7 +10,6 @@ namespace LocalWhisper.Tests.Integration;
 /// Integration tests for Post-Processing feature.
 /// Tests for US-061 (fallback), US-062 (meaning preservation), US-063 (glossary).
 /// </summary>
-[Trait("Batch", "6")]
 public class PostProcessingIntegrationTests : IDisposable
 {
     private readonly string _testDirectory;
@@ -19,6 +18,9 @@ public class PostProcessingIntegrationTests : IDisposable
     {
         _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisper_Integration_" + Guid.NewGuid());
         Directory.CreateDirectory(_testDirectory);
+
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        LocalWhisper.Core.AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
     }
 
     public void Dispose()

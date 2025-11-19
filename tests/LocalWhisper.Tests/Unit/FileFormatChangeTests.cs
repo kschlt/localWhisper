@@ -13,7 +13,6 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-06-settings.md (FileFormatChangeTests section)
 /// See: docs/ui/settings-window-specification.md (File Format Section)
 /// </remarks>
-[Trait("Batch", "3")]
 public class FileFormatChangeTests
 {
     public FileFormatChangeTests()

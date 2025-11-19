@@ -14,7 +14,6 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-06-settings.md (DataRootChangeTests section)
 /// See: docs/ui/settings-window-specification.md (Data Root Section)
 /// </remarks>
-[Trait("Batch", "3")]
 public class DataRootChangeTests : IDisposable
 {
     private readonly string _validTestDataRoot;

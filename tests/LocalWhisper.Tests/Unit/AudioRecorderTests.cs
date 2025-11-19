@@ -19,7 +19,6 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-02-audio-recording.md (US-010)
 /// See: docs/specification/user-stories-gherkin.md (lines 146-182)
 /// </remarks>
-[Trait("Batch", "1")]
 public class AudioRecorderTests : IDisposable
 {
     private readonly string _testDirectory;

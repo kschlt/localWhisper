@@ -15,7 +15,6 @@ namespace LocalWhisper.Tests.Unit;
 /// Tests for US-056: Settings - Validation and Error Handling (Config save failure)
 /// See: docs/iterations/iteration-06-settings.md (SettingsPersistenceTests section)
 /// </remarks>
-[Trait("Batch", "3")]
 public class SettingsPersistenceTests : IDisposable
 {
     private readonly string _testDirectory;
