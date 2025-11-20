@@ -164,11 +164,12 @@ public class TrayIconManager : IDisposable
         menu.Items.Add(settingsItem);
 
         // History menu item
+        var effectiveDataRoot = _mutableDataRoot != null ? _mutableDataRoot : _dataRoot;
         var historyItem = new MenuItem
         {
             Header = "History",
             // Disable if data root is not configured (check mutable override first for tests)
-            IsEnabled = !string.IsNullOrEmpty(_mutableDataRoot ?? _dataRoot)
+            IsEnabled = !string.IsNullOrEmpty(effectiveDataRoot)
         };
         historyItem.Click += (s, e) => OpenHistoryFolder();
         menu.Items.Add(historyItem);
