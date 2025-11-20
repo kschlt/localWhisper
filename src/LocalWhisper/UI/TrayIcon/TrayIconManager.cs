@@ -189,11 +189,19 @@ public class TrayIconManager : IDisposable
     /// </summary>
     internal ContextMenu GetContextMenu()
     {
-        return CreateContextMenu();
+        // Return cached menu if available and data root hasn't changed
+        if (_cachedMenu != null)
+        {
+            return _cachedMenu;
+        }
+
+        _cachedMenu = CreateContextMenu();
+        return _cachedMenu;
     }
 
     // Mutable data root for testing
     private string? _mutableDataRoot;
+    private ContextMenu? _cachedMenu;
 
     /// <summary>
     /// Set data root path (for testing).
@@ -201,6 +209,8 @@ public class TrayIconManager : IDisposable
     internal void SetDataRoot(string? dataRoot)
     {
         _mutableDataRoot = dataRoot;
+        // Force menu recreation on next GetContextMenu() call
+        _cachedMenu = null;
     }
 
     /// <summary>

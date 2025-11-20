@@ -367,11 +367,14 @@ public partial class SettingsWindow : Window
             return;
         }
 
-        // Disable button during verification
-        VerifyModelButton.IsEnabled = false;
-        ModelStatusText.Text = "⏳ Verifiziere Modell...";
-        ModelStatusText.Foreground = System.Windows.Media.Brushes.Gray;
-        ModelStatusText.Visibility = Visibility.Visible;
+        // Disable button during verification - safely handle UI thread
+        SafeUpdateUI(() =>
+        {
+            VerifyModelButton.IsEnabled = false;
+            ModelStatusText.Text = "⏳ Verifiziere Modell...";
+            ModelStatusText.Foreground = System.Windows.Media.Brushes.Gray;
+            ModelStatusText.Visibility = Visibility.Visible;
+        });
 
         try
         {
@@ -385,42 +388,77 @@ public partial class SettingsWindow : Window
             );
 
             // User-friendly status (no technical hash details)
-            // await automatically marshals back to UI thread
-            if (isValid)
+            // Safely update UI from any thread
+            SafeUpdateUI(() =>
             {
-                ModelStatusText.Text = "✓ Modell OK";
-                ModelStatusText.Foreground = System.Windows.Media.Brushes.Green;
-                AppLogger.LogInformation("Model verification successful (SHA-1 computed)", new { ModelPath = _currentModelPath });
-            }
-            else if (!File.Exists(_currentModelPath))
-            {
-                ModelStatusText.Text = "⚠ Modell nicht gefunden oder beschädigt";
-                ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
-                AppLogger.LogWarning("Model verification failed", new { ModelPath = _currentModelPath, Message = message });
-            }
-            else
-            {
-                ModelStatusText.Text = "⚠ Modell ungültig (Hash-Prüfung fehlgeschlagen)";
-                ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
-                _hasModelError = true;
-                AppLogger.LogWarning("Model hash validation failed", new { ModelPath = _currentModelPath, Message = message });
-            }
+                if (isValid)
+                {
+                    ModelStatusText.Text = "✓ Modell OK";
+                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Green;
+                    AppLogger.LogInformation("Model verification successful (SHA-1 computed)", new { ModelPath = _currentModelPath });
+                }
+                else if (!File.Exists(_currentModelPath))
+                {
+                    ModelStatusText.Text = "⚠ Modell nicht gefunden oder beschädigt";
+                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                    AppLogger.LogWarning("Model verification failed", new { ModelPath = _currentModelPath, Message = message });
+                }
+                else
+                {
+                    ModelStatusText.Text = "⚠ Modell ungültig (Hash-Prüfung fehlgeschlagen)";
+                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                    _hasModelError = true;
+                    AppLogger.LogWarning("Model hash validation failed", new { ModelPath = _currentModelPath, Message = message });
+                }
+            });
         }
         catch (Exception ex)
         {
-            ModelStatusText.Text = $"⚠ Fehler: {ex.Message}";
-            ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
-            AppLogger.LogError("Model verification error", ex, new { ModelPath = _currentModelPath });
+            SafeUpdateUI(() =>
+            {
+                ModelStatusText.Text = $"⚠ Fehler: {ex.Message}";
+                ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                AppLogger.LogError("Model verification error", ex, new { ModelPath = _currentModelPath });
+            });
         }
         finally
         {
-            VerifyModelButton.IsEnabled = true;
+            SafeUpdateUI(() =>
+            {
+                VerifyModelButton.IsEnabled = true;
+            });
         }
 
-        UpdateSaveButtonState();
+        SafeUpdateUI(() => UpdateSaveButtonState());
 
         // Small delay for visual feedback
         await Task.Delay(500);
+    }
+
+    /// <summary>
+    /// Safely update UI from any thread (production or test environment).
+    /// </summary>
+    private void SafeUpdateUI(Action action)
+    {
+        // Check if we're already on the UI thread
+        if (Dispatcher.CheckAccess())
+        {
+            action();
+        }
+        else
+        {
+            // In test environments, Dispatcher may not be running a message pump
+            // Use Invoke synchronously to ensure completion
+            try
+            {
+                Dispatcher.Invoke(action, System.Windows.Threading.DispatcherPriority.Normal);
+            }
+            catch (TaskCanceledException)
+            {
+                // Dispatcher shutdown - run action directly for test cleanup
+                action();
+            }
+        }
     }
 
     /// <summary>
