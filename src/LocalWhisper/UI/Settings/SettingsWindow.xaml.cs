@@ -367,61 +367,105 @@ public partial class SettingsWindow : Window
             return;
         }
 
-        // Disable button during verification
-        VerifyModelButton.IsEnabled = false;
-        ModelStatusText.Text = "⏳ Verifiziere Modell...";
-        ModelStatusText.Foreground = System.Windows.Media.Brushes.Gray;
-        ModelStatusText.Visibility = Visibility.Visible;
+        // Disable button during verification - ensure UI thread access
+        if (Dispatcher.CheckAccess())
+        {
+            VerifyModelButton.IsEnabled = false;
+            ModelStatusText.Text = "⏳ Verifiziere Modell...";
+            ModelStatusText.Foreground = System.Windows.Media.Brushes.Gray;
+            ModelStatusText.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            Dispatcher.Invoke(() =>
+            {
+                VerifyModelButton.IsEnabled = false;
+                ModelStatusText.Text = "⏳ Verifiziere Modell...";
+                ModelStatusText.Foreground = System.Windows.Media.Brushes.Gray;
+                ModelStatusText.Visibility = Visibility.Visible;
+            });
+        }
 
         try
         {
             // SHA-1 hash verification (US-058)
-            // Note: We ignore progress for minimal UX (just show spinner)
-            var progress = new Progress<double>(_ => { /* No UI update for progress percentage */ });
+            var progress = new Progress<double>(_ => { });
 
             // Compute SHA-1 hash (runs in background thread)
-            // ConfigureAwait(false) to avoid capturing SynchronizationContext
             var (isValid, message) = await Task.Run(() =>
                 _modelValidator.ValidateModel(_currentModelPath, "", progress)
-            ).ConfigureAwait(true); // Keep context for UI updates
+            );
 
-            // User-friendly status (no technical hash details)
-            // Back on UI thread automatically due to ConfigureAwait(true)
-            if (isValid)
+            // Update UI on UI thread
+            Action updateUI = () =>
             {
-                ModelStatusText.Text = "✓ Modell OK";
-                ModelStatusText.Foreground = System.Windows.Media.Brushes.Green;
-                _hasModelError = false;
-                AppLogger.LogInformation("Model verification successful (SHA-1 computed)", new { ModelPath = _currentModelPath });
-            }
-            else if (!File.Exists(_currentModelPath))
+                if (isValid)
+                {
+                    ModelStatusText.Text = "✓ Modell OK";
+                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Green;
+                    _hasModelError = false;
+                    AppLogger.LogInformation("Model verification successful (SHA-1 computed)", new { ModelPath = _currentModelPath });
+                }
+                else if (!File.Exists(_currentModelPath))
+                {
+                    ModelStatusText.Text = "⚠ Modell nicht gefunden oder beschädigt";
+                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                    _hasModelError = false;
+                    AppLogger.LogWarning("Model verification failed", new { ModelPath = _currentModelPath, Message = message });
+                }
+                else
+                {
+                    ModelStatusText.Text = "⚠ Modell ungültig (Hash-Prüfung fehlgeschlagen)";
+                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                    _hasModelError = true;
+                    AppLogger.LogWarning("Model hash validation failed", new { ModelPath = _currentModelPath, Message = message });
+                }
+            };
+
+            if (Dispatcher.CheckAccess())
             {
-                ModelStatusText.Text = "⚠ Modell nicht gefunden oder beschädigt";
-                ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
-                _hasModelError = false; // File not found is not a validation error
-                AppLogger.LogWarning("Model verification failed", new { ModelPath = _currentModelPath, Message = message });
+                updateUI();
             }
             else
             {
-                ModelStatusText.Text = "⚠ Modell ungültig (Hash-Prüfung fehlgeschlagen)";
-                ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
-                _hasModelError = true;
-                AppLogger.LogWarning("Model hash validation failed", new { ModelPath = _currentModelPath, Message = message });
+                Dispatcher.Invoke(updateUI);
             }
         }
         catch (Exception ex)
         {
-            ModelStatusText.Text = $"⚠ Fehler: {ex.Message}";
-            ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
-            _hasModelError = false; // Exception is not a validation error
-            AppLogger.LogError("Model verification error", ex, new { ModelPath = _currentModelPath });
+            Action updateUIError = () =>
+            {
+                ModelStatusText.Text = $"⚠ Fehler: {ex.Message}";
+                ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                _hasModelError = false;
+                AppLogger.LogError("Model verification error", ex, new { ModelPath = _currentModelPath });
+            };
+
+            if (Dispatcher.CheckAccess())
+            {
+                updateUIError();
+            }
+            else
+            {
+                Dispatcher.Invoke(updateUIError);
+            }
         }
         finally
         {
-            VerifyModelButton.IsEnabled = true;
+            if (Dispatcher.CheckAccess())
+            {
+                VerifyModelButton.IsEnabled = true;
+                UpdateSaveButtonState();
+            }
+            else
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    VerifyModelButton.IsEnabled = true;
+                    UpdateSaveButtonState();
+                });
+            }
         }
-
-        UpdateSaveButtonState();
 
         // Small delay for visual feedback
         await Task.Delay(500);
@@ -468,7 +512,9 @@ public partial class SettingsWindow : Window
 
             // Auto-verify new model (US-058)
             await Task.Delay(100); // Small delay for UI update
-            VerifyModelButton_Click(this, new RoutedEventArgs());
+
+            // Ensure verification runs on UI thread
+            await Dispatcher.InvokeAsync(() => VerifyModelButton_Click(this, new RoutedEventArgs()));
         }
         else
         {
@@ -1134,20 +1180,29 @@ public partial class SettingsWindow : Window
     /// </summary>
     internal void VerifyModel()
     {
-        // Synchronous wrapper for testing - run on Dispatcher to avoid deadlock
-        if (Dispatcher.CheckAccess())
+        // Ensure we're on UI thread
+        if (!Dispatcher.CheckAccess())
         {
-            // Already on UI thread - use async helper via Task
-            var task = VerifyModelAsync();
-            // Pump messages while waiting to prevent deadlock
-            var frame = new System.Windows.Threading.DispatcherFrame();
-            task.ContinueWith(_ => frame.Continue = false, System.Threading.Tasks.TaskScheduler.Default);
-            System.Windows.Threading.Dispatcher.PushFrame(frame);
-        }
-        else
-        {
-            // Not on UI thread - invoke on UI thread
             Dispatcher.Invoke(() => VerifyModel());
+            return;
+        }
+
+        // Run async task synchronously with proper message pumping
+        var task = VerifyModelAsync();
+
+        // Wait for task completion by pumping dispatcher messages
+        while (!task.IsCompleted)
+        {
+            // Process messages to prevent UI freeze and allow async operations to complete
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
+                System.Windows.Threading.DispatcherPriority.Background,
+                new Action(delegate { }));
+        }
+
+        // Ensure any exceptions are observed
+        if (task.IsFaulted && task.Exception != null)
+        {
+            throw task.Exception;
         }
     }
 

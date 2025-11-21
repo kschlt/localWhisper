@@ -164,11 +164,11 @@ public class TrayIconManager : IDisposable
         menu.Items.Add(settingsItem);
 
         // History menu item
-        var effectiveDataRoot = _mutableDataRoot != null ? _mutableDataRoot : _dataRoot;
+        var effectiveDataRoot = _mutableDataRootSet ? _mutableDataRoot : _dataRoot;
         var historyItem = new MenuItem
         {
             Header = "History",
-            // Disable if data root is not configured (check mutable override first for tests)
+            // Disable if data root is not configured
             IsEnabled = !string.IsNullOrEmpty(effectiveDataRoot)
         };
         historyItem.Click += (s, e) => OpenHistoryFolder();
@@ -202,6 +202,7 @@ public class TrayIconManager : IDisposable
 
     // Mutable data root for testing
     private string? _mutableDataRoot;
+    private bool _mutableDataRootSet; // Track if mutable data root was explicitly set
     private ContextMenu? _cachedMenu;
 
     /// <summary>
@@ -210,6 +211,7 @@ public class TrayIconManager : IDisposable
     internal void SetDataRoot(string? dataRoot)
     {
         _mutableDataRoot = dataRoot;
+        _mutableDataRootSet = true;
         // Force menu recreation on next GetContextMenu() call
         _cachedMenu = null;
     }
