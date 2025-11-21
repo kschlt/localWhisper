@@ -13,10 +13,17 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-06-settings.md (HotkeyChangeTests section)
 /// See: docs/ui/settings-window-specification.md (Hotkey Section)
 /// </remarks>
-[Trait("Batch", "3")]
 public class HotkeyChangeTests
 {
-    [Fact]
+    public HotkeyChangeTests()
+    {
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        var testDir = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_" + Guid.NewGuid());
+        Directory.CreateDirectory(testDir);
+        LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
+    }
+
+    [StaFact]
     public void ChangeHotkey_Valid_UpdatesField()
     {
         // Arrange
@@ -32,7 +39,7 @@ public class HotkeyChangeTests
         window.HasHotkeyConflict.Should().BeFalse("no conflict detected");
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeHotkey_Conflict_ShowsWarning()
     {
         // Arrange
@@ -50,7 +57,7 @@ public class HotkeyChangeTests
         window.SaveButton.IsEnabled.Should().BeTrue();
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeHotkey_NoModifier_ShowsError()
     {
         // Arrange
@@ -67,7 +74,7 @@ public class HotkeyChangeTests
         window.SaveButton.IsEnabled.Should().BeFalse("validation error exists");
     }
 
-    [Fact]
+    [StaFact]
     public void SaveHotkeyChange_RequiresRestart()
     {
         // Arrange
@@ -82,7 +89,7 @@ public class HotkeyChangeTests
         requiresRestart.Should().BeTrue("hotkey change requires restart");
     }
 
-    [Fact]
+    [StaFact]
     public void HotkeyChange_FromCtrlShiftD_ToCtrlAltD_UpdatesConfig()
     {
         // Arrange
@@ -100,7 +107,7 @@ public class HotkeyChangeTests
         updatedConfig.Hotkey.Key.Should().Be("D");
     }
 
-    [Fact]
+    [StaFact]
     public void HotkeyTextBox_DisplaysFormatted_WithPlusSigns()
     {
         // Arrange
@@ -117,7 +124,7 @@ public class HotkeyChangeTests
     // ENHANCEMENT TESTS (US-057): In-Place Hotkey Capture
     // =============================================================================
 
-    [Fact]
+    [StaFact]
     public void HotkeyCapture_EntersCaptureMode()
     {
         // Arrange

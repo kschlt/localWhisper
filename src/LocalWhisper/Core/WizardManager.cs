@@ -193,8 +193,12 @@ public class WizardManager
     {
         try
         {
-            // Create directory if it doesn't exist
-            Directory.CreateDirectory(path);
+            // Check if directory exists
+            if (!Directory.Exists(path))
+            {
+                AppLogger.LogWarning("Data root directory does not exist", new { Path = path });
+                return false;
+            }
 
             // Test write access
             var testFile = Path.Combine(path, ".write_test");

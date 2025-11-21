@@ -14,7 +14,6 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-06-settings.md (DataRootChangeTests section)
 /// See: docs/ui/settings-window-specification.md (Data Root Section)
 /// </remarks>
-[Trait("Batch", "3")]
 public class DataRootChangeTests : IDisposable
 {
     private readonly string _validTestDataRoot;
@@ -22,6 +21,11 @@ public class DataRootChangeTests : IDisposable
 
     public DataRootChangeTests()
     {
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        var testDir = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_" + Guid.NewGuid());
+        Directory.CreateDirectory(testDir);
+        LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
+
         // Create valid test data root structure
         _validTestDataRoot = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_Valid", Guid.NewGuid().ToString());
         Directory.CreateDirectory(Path.Combine(_validTestDataRoot, "config"));
@@ -44,7 +48,7 @@ public class DataRootChangeTests : IDisposable
             Directory.Delete(_invalidTestDataRoot, recursive: true);
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeDataRoot_ValidPath_UpdatesField()
     {
         // Arrange
@@ -60,7 +64,7 @@ public class DataRootChangeTests : IDisposable
         window.HasValidationErrors.Should().BeFalse("path is valid");
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeDataRoot_InvalidStructure_ShowsError()
     {
         // Arrange
@@ -77,7 +81,7 @@ public class DataRootChangeTests : IDisposable
         window.SaveButton.IsEnabled.Should().BeFalse("validation error exists");
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeDataRoot_NonExistent_ShowsError()
     {
         // Arrange
@@ -93,13 +97,18 @@ public class DataRootChangeTests : IDisposable
         window.SaveButton.IsEnabled.Should().BeFalse("validation error exists");
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeDataRoot_ValidatesUsingDataRootValidator()
     {
         // Arrange
         var validator = new DataRootValidator();
         var config = CreateDefaultConfig();
         config.Whisper = new WhisperConfig { ModelPath = Path.Combine(_validTestDataRoot, "models", "model.bin") };
+
+        // Create config.toml (required by validator)
+        var configPath = Path.Combine(_validTestDataRoot, "config", "config.toml");
+        File.WriteAllText(configPath, "[whisper]\nlanguage = \"de\"\nmodel_path = \"" +
+            config.Whisper.ModelPath.Replace("\\", "\\\\") + "\"\n\n[hotkey]\nmodifiers = 3\nkey = 33");
 
         // Create model file
         File.WriteAllText(config.Whisper.ModelPath, "dummy model content");
@@ -112,7 +121,7 @@ public class DataRootChangeTests : IDisposable
         result.Errors.Should().BeEmpty();
     }
 
-    [Fact]
+    [StaFact]
     public void SaveDataRootChange_RequiresRestart()
     {
         // Arrange
@@ -127,7 +136,7 @@ public class DataRootChangeTests : IDisposable
         requiresRestart.Should().BeTrue("data root change requires restart");
     }
 
-    [Fact]
+    [StaFact]
     public void DataRootChange_UpdatesConfigCorrectly()
     {
         // Arrange

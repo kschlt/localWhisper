@@ -29,6 +29,19 @@ public class TrayIconManager : IDisposable
     private bool _disposed;
     private SettingsWindow? _settingsWindow;
 
+    // =============================================================================
+    // EVENTS (for testing)
+    // =============================================================================
+
+    /// <summary>Event fired when Settings window is opened (for testing)</summary>
+    internal event Action<SettingsWindow>? OnSettingsOpened;
+
+    /// <summary>Event fired when Explorer is opened to a path (for testing)</summary>
+    internal event Action<string>? OnExplorerOpened;
+
+    /// <summary>Event fired when application exit is requested (for testing)</summary>
+    internal event Action? OnExitRequested;
+
     public TrayIconManager(StateMachine stateMachine, string configPath, string dataRoot)
     {
         _stateMachine = stateMachine;
@@ -89,8 +102,20 @@ public class TrayIconManager : IDisposable
     /// </summary>
     private System.Drawing.Icon CreateIcon(AppState state)
     {
+        // Ensure we're on the UI thread (WPF objects require STA thread)
+        if (!_hiddenWindow.Dispatcher.CheckAccess())
+        {
+            return _hiddenWindow.Dispatcher.Invoke(() => CreateIcon(state));
+        }
+
         var iconGlyph = IconResources.GetStateIcon(state);
         var color = IconResources.GetStateColor(state);
+
+        // Freeze brush to make it thread-safe for cross-thread access
+        if (color.CanFreeze && !color.IsFrozen)
+        {
+            color.Freeze();
+        }
 
         // Create bitmap with icon glyph
         var visual = new DrawingVisual();
@@ -139,9 +164,12 @@ public class TrayIconManager : IDisposable
         menu.Items.Add(settingsItem);
 
         // History menu item
+        var effectiveDataRoot = _mutableDataRootSet ? _mutableDataRoot : _dataRoot;
         var historyItem = new MenuItem
         {
-            Header = "History"
+            Header = "History",
+            // Disable if data root is not configured
+            IsEnabled = !string.IsNullOrEmpty(effectiveDataRoot)
         };
         historyItem.Click += (s, e) => OpenHistoryFolder();
         menu.Items.Add(historyItem);
@@ -151,14 +179,56 @@ public class TrayIconManager : IDisposable
         {
             Header = "Beenden"
         };
-        exitItem.Click += (s, e) =>
-        {
-            AppLogger.LogInformation("User requested application shutdown (via tray menu)");
-            Application.Current.Shutdown(0);
-        };
+        exitItem.Click += (s, e) => Exit();
         menu.Items.Add(exitItem);
 
         return menu;
+    }
+
+    /// <summary>
+    /// Get context menu (for testing).
+    /// </summary>
+    internal ContextMenu GetContextMenu()
+    {
+        // Return cached menu if available and data root hasn't changed
+        if (_cachedMenu != null)
+        {
+            return _cachedMenu;
+        }
+
+        _cachedMenu = CreateContextMenu();
+        return _cachedMenu;
+    }
+
+    // Mutable data root for testing
+    private string? _mutableDataRoot;
+    private bool _mutableDataRootSet; // Track if mutable data root was explicitly set
+    private ContextMenu? _cachedMenu;
+
+    /// <summary>
+    /// Set data root path (for testing).
+    /// </summary>
+    internal void SetDataRoot(string? dataRoot)
+    {
+        _mutableDataRoot = dataRoot;
+        _mutableDataRootSet = true;
+        // Force menu recreation on next GetContextMenu() call
+        _cachedMenu = null;
+    }
+
+    /// <summary>
+    /// Exit application (for testing).
+    /// </summary>
+    internal void Exit()
+    {
+        OnExitRequested?.Invoke();
+        AppLogger.LogInformation("User requested application shutdown (via tray menu)");
+
+        // Check if Application.Current is available (not available in test environments)
+        if (Application.Current != null)
+        {
+            Application.Current.Shutdown(0);
+        }
     }
 
     /// <summary>
@@ -166,24 +236,38 @@ public class TrayIconManager : IDisposable
     /// </summary>
     private void OpenSettings()
     {
+        OpenSettings(null, null);
+    }
+
+    /// <summary>
+    /// Open Settings window (for testing with custom config).
+    /// </summary>
+    internal SettingsWindow? OpenSettings(AppConfig? config, string? configPath)
+    {
+        // Use provided config/path or load from instance fields
+        var actualConfig = config ?? ConfigManager.Load(_configPath);
+        var actualConfigPath = configPath ?? _configPath;
+
         // Prevent multiple windows
         if (_settingsWindow != null && _settingsWindow.IsLoaded)
         {
             _settingsWindow.Activate();
-            return;
+            return _settingsWindow;
         }
 
         try
         {
-            // Load current config
-            var config = ConfigManager.Load(_configPath);
-
             // Create and show Settings window
-            _settingsWindow = new SettingsWindow(config, _configPath);
+            _settingsWindow = new SettingsWindow(actualConfig, actualConfigPath);
             _settingsWindow.Closed += (s, e) => _settingsWindow = null;
+
+            // Trigger event for testing
+            OnSettingsOpened?.Invoke(_settingsWindow);
+
             _settingsWindow.ShowDialog();
 
             AppLogger.LogInformation("Settings window opened from tray menu");
+            return _settingsWindow;
         }
         catch (Exception ex)
         {
@@ -194,6 +278,7 @@ public class TrayIconManager : IDisposable
                 MessageBoxButton.OK,
                 MessageBoxImage.Error
             );
+            return null;
         }
     }
 
@@ -202,15 +287,25 @@ public class TrayIconManager : IDisposable
     /// </summary>
     private void OpenHistoryFolder()
     {
+        var historyPath = PathHelpers.GetHistoryPath(_dataRoot);
+        OpenHistory(historyPath);
+    }
+
+    /// <summary>
+    /// Open Windows Explorer to specified history path (for testing).
+    /// </summary>
+    internal void OpenHistory(string historyPath)
+    {
         try
         {
-            var historyPath = PathHelpers.GetHistoryPath(_dataRoot);
-
             if (!Directory.Exists(historyPath))
             {
                 Directory.CreateDirectory(historyPath);
                 AppLogger.LogInformation("Created history folder", new { Path = historyPath });
             }
+
+            // Trigger event for testing
+            OnExplorerOpened?.Invoke(historyPath);
 
             Process.Start("explorer.exe", historyPath);
             AppLogger.LogInformation("Opened history folder", new { Path = historyPath });

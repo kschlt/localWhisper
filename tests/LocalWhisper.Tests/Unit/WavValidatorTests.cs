@@ -18,7 +18,6 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-02-audio-recording.md (US-011)
 /// See: docs/specification/user-stories-gherkin.md (lines 184-213)
 /// </remarks>
-[Trait("Batch", "1")]
 public class WavValidatorTests : IDisposable
 {
     private readonly string _testDirectory;
@@ -28,6 +27,9 @@ public class WavValidatorTests : IDisposable
         // Create temporary test directory
         _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisperTests", Guid.NewGuid().ToString());
         Directory.CreateDirectory(_testDirectory);
+
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        LocalWhisper.Core.AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
     }
 
     public void Dispose()

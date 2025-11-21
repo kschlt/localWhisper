@@ -15,7 +15,6 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-06-settings.md (ModelVerificationTests section)
 /// See: docs/ui/settings-window-specification.md (Whisper Model Section)
 /// </remarks>
-[Trait("Batch", "4")]
 public class ModelVerificationTests : IDisposable
 {
     private readonly string _testDirectory;
@@ -26,6 +25,9 @@ public class ModelVerificationTests : IDisposable
     {
         _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_Models", Guid.NewGuid().ToString());
         Directory.CreateDirectory(_testDirectory);
+
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        LocalWhisper.Core.AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
 
         // Create valid model file (with known content for SHA-1 testing)
         _validModelPath = Path.Combine(_testDirectory, "ggml-valid.bin");
@@ -42,7 +44,7 @@ public class ModelVerificationTests : IDisposable
             Directory.Delete(_testDirectory, recursive: true);
     }
 
-    [Fact]
+    [StaFact]
     public void VerifyModel_ValidHash_ShowsSuccess()
     {
         // Arrange
@@ -52,7 +54,7 @@ public class ModelVerificationTests : IDisposable
 
         // Mock ModelValidator to return valid
         var mockValidator = new Mock<ModelValidator>();
-        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>()))
+        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>(), null))
             .Returns((true, "Hash matches"));
         window.SetModelValidator(mockValidator.Object);
 
@@ -64,7 +66,7 @@ public class ModelVerificationTests : IDisposable
         window.ModelStatusText.Foreground.Should().Be(System.Windows.Media.Brushes.Green);
     }
 
-    [Fact]
+    [StaFact]
     public void VerifyModel_InvalidHash_ShowsError()
     {
         // Arrange
@@ -74,7 +76,7 @@ public class ModelVerificationTests : IDisposable
 
         // Mock ModelValidator to return invalid
         var mockValidator = new Mock<ModelValidator>();
-        mockValidator.Setup(v => v.ValidateModel(_invalidModelPath, It.IsAny<string>()))
+        mockValidator.Setup(v => v.ValidateModel(_invalidModelPath, It.IsAny<string>(), null))
             .Returns((false, "Hash mismatch"));
         window.SetModelValidator(mockValidator.Object);
 
@@ -86,7 +88,7 @@ public class ModelVerificationTests : IDisposable
         window.ModelStatusText.Foreground.Should().Be(System.Windows.Media.Brushes.Red);
     }
 
-    [Fact]
+    [StaFact]
     public void VerifyModel_ShowsProgressDialog()
     {
         // Arrange
@@ -103,7 +105,7 @@ public class ModelVerificationTests : IDisposable
         progressShown.Should().BeTrue("progress dialog should be shown during verification");
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeModel_ValidFile_UpdatesPath()
     {
         // Arrange
@@ -112,7 +114,7 @@ public class ModelVerificationTests : IDisposable
 
         // Mock ModelValidator to return valid
         var mockValidator = new Mock<ModelValidator>();
-        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>()))
+        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>(), null))
             .Returns((true, "Hash matches"));
         window.SetModelValidator(mockValidator.Object);
 
@@ -124,7 +126,7 @@ public class ModelVerificationTests : IDisposable
         window.ModelPathText.Text.Should().Contain(_validModelPath);
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeModel_InvalidHash_ShowsError()
     {
         // Arrange
@@ -133,7 +135,7 @@ public class ModelVerificationTests : IDisposable
 
         // Mock ModelValidator to return invalid
         var mockValidator = new Mock<ModelValidator>();
-        mockValidator.Setup(v => v.ValidateModel(_invalidModelPath, It.IsAny<string>()))
+        mockValidator.Setup(v => v.ValidateModel(_invalidModelPath, It.IsAny<string>(), null))
             .Returns((false, "Hash mismatch"));
         window.SetModelValidator(mockValidator.Object);
 
@@ -146,7 +148,7 @@ public class ModelVerificationTests : IDisposable
         window.SaveButton.IsEnabled.Should().BeFalse("validation error exists");
     }
 
-    [Fact]
+    [StaFact]
     public void SaveModelChange_NoRestartRequired()
     {
         // Arrange
@@ -155,7 +157,7 @@ public class ModelVerificationTests : IDisposable
 
         // Mock ModelValidator
         var mockValidator = new Mock<ModelValidator>();
-        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>()))
+        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>(), null))
             .Returns((true, "Hash matches"));
         window.SetModelValidator(mockValidator.Object);
 
@@ -167,7 +169,7 @@ public class ModelVerificationTests : IDisposable
         requiresRestart.Should().BeFalse("model path change does NOT require restart");
     }
 
-    [Fact]
+    [StaFact]
     public void ModelPathChange_UpdatesConfigCorrectly()
     {
         // Arrange
@@ -176,7 +178,7 @@ public class ModelVerificationTests : IDisposable
 
         // Mock ModelValidator
         var mockValidator = new Mock<ModelValidator>();
-        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>()))
+        mockValidator.Setup(v => v.ValidateModel(_validModelPath, It.IsAny<string>(), null))
             .Returns((true, "Hash matches"));
         window.SetModelValidator(mockValidator.Object);
 

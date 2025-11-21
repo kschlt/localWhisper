@@ -8,9 +8,16 @@ namespace LocalWhisper.Tests.Unit;
 /// Unit tests for PostProcessingConfig model.
 /// Tests for US-060 (config structure).
 /// </summary>
-[Trait("Batch", "2")]
 public class PostProcessingConfigTests
 {
+    public PostProcessingConfigTests()
+    {
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        var testDir = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_" + Guid.NewGuid());
+        Directory.CreateDirectory(testDir);
+        LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
+    }
+
     [Fact]
     public void PostProcessingConfig_DefaultValues_AreCorrect()
     {

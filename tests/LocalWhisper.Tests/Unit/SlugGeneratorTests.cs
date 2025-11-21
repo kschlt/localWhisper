@@ -18,9 +18,16 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-04-clipboard-history-flyout.md (US-036)
 /// See: docs/specification/user-stories-gherkin.md (lines 611-652)
 /// </remarks>
-[Trait("Batch", "5")]
 public class SlugGeneratorTests
 {
+    public SlugGeneratorTests()
+    {
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        var testDir = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_" + Guid.NewGuid());
+        Directory.CreateDirectory(testDir);
+        LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
+    }
+
     [Theory]
     [InlineData("Let me check on that and get back to you", "let-me-check-on-that-and-get-back-to-you")]
     [InlineData("Meeting at 3:00 PM", "meeting-at-3-00-pm")]

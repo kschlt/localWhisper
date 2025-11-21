@@ -5,7 +5,7 @@
 **Portable Windows desktop app for offline speech-to-text dictation**
 
 Platform: .NET 8 + WPF | Whisper CLI | Offline-first
-Status: **Documentation complete, ready for Iteration 1**
+Status: **Iterations 1-7 Complete (85%), Iteration 8 Pending**
 
 **Project Structure:** `docs/architecture/project-structure.md`
 **Icon Style Guide:** `docs/ui/icon-style-guide.md`
@@ -22,11 +22,18 @@ Status: **Documentation complete, ready for Iteration 1**
 4. `docs/architecture/project-structure.md` - Solution & folder structure
 5. `docs/ui/icon-style-guide.md` - Icon specifications
 
+**Current Status (2025-11-19):**
+- Iterations 1-7 are **fully implemented** and tested
+- Iteration 8 (Stabilization + Reset + Logs) is the final remaining task
+- All core functionality is working: hotkey, recording, STT, clipboard, history, flyout, wizard, settings, post-processing
+- 13 previously excluded tests have been re-enabled with full test infrastructure
+- Project is ~85% complete (34-48h of 40-60h estimated effort)
+
 **Continuing implementation:**
-- Check current iteration in `docs/iterations/` (e.g., `iteration-01-hotkey-skeleton.md`)
-- Load relevant FR/NFR/ADR as needed
-- Update `docs/specification/traceability-matrix.md` after adding code
-- Track placeholders in `docs/meta/placeholders-tracker.md`
+- Focus on Iteration 8: Stabilization, reset functionality, final logging improvements
+- Verify all NFRs, especially NFR-001 (p95 latency ≤ 2.5s)
+- Run full test suite regression
+- Prepare v0.1 release
 
 **Manual testing:**
 - Execute test scripts from `docs/testing/manual-test-script-iter{N}.md`
@@ -40,14 +47,14 @@ User holds hotkey → Audio recorded → Whisper STT → Clipboard + History + F
 ```
 
 **8 Iterations (sequential):**
-1. Hotkey & skeleton (4-6h) ← **START HERE**
-2. Audio recording (4-6h)
-3. STT integration (6-8h)
-4. Clipboard + History + Flyout (6-10h) ★ E2E complete
-5. First-run wizard (8-12h)
-6. Settings UI (4-6h)
-7. Post-processing (4-6h)
-8. Stabilization + reset (6-10h) ★ v0.1 release
+1. Hotkey & skeleton (4-6h) ✅ **Complete**
+2. Audio recording (4-6h) ✅ **Complete**
+3. STT integration (6-8h) ✅ **Complete**
+4. Clipboard + History + Flyout (6-10h) ✅ **Complete** ★ E2E works
+5. First-run wizard (8-12h) ✅ **Complete** (5a: Wizard + 5b: Download/Repair)
+6. Settings UI (4-6h) ✅ **Complete**
+7. Post-processing (4-6h) ✅ **Complete**
+8. Stabilization + reset (6-10h) 📋 **Pending** ★ v0.1 release
 
 ---
 
@@ -174,5 +181,32 @@ Read: docs/adr/{relevant}.md                       # Specific decisions
 
 ---
 
-**Current Branch:** claude/add-cloudmd-files-01Y6TNZNHQP2sCvptAYcR3Rr
-**Next:** Start Iteration 1 (Hotkey & skeleton)
+## Current Implementation Status
+
+**Branch:** `claude/project-audit-1763549486`
+
+**Completed Iterations (1-7):**
+- ✅ Iteration 1: Hotkey & App Skeleton
+- ✅ Iteration 2: Audio Recording (WASAPI)
+- ✅ Iteration 3: STT Integration (Whisper CLI)
+- ✅ Iteration 4: Clipboard + History + Flyout
+- ✅ Iteration 5a: Wizard Core (File Selection, Model Verification)
+- ✅ Iteration 5b: Download + Repair (HTTP Download, Repair Flow)
+- ✅ Iteration 6: Settings UI (Configuration Panel)
+- ✅ Iteration 7: Post-Processing (Optional LLM Integration)
+
+**Pending:**
+- 📋 Iteration 8: Stabilization + Reset + Logs
+
+**Next Steps:**
+1. Complete Iteration 8 (error handling, reset functionality, performance verification)
+2. Verify all NFRs (especially p95 latency ≤ 2.5s)
+3. Run full test suite regression
+4. Tag v0.1 release
+
+**Test Infrastructure:**
+- All 13 previously excluded tests re-enabled (2025-11-19)
+- Comprehensive test coverage for iterations 1-7
+- TDD methodology followed with specifications as authority
+
+**Last Updated:** 2025-11-19

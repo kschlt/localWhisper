@@ -36,6 +36,7 @@
 
                             <!-- Hotkey TextBox (read-only display) -->
                             <TextBox x:Name="HotkeyTextBox"
+                                     x:FieldModifier="internal"
                                      Grid.Column="0"
                                      IsReadOnly="True"
                                      Height="30"
@@ -55,10 +56,20 @@
                                     Click="ChangeHotkeyButton_Click"/>
                         </Grid>
 
-                        <!-- Warning/Error Text -->
+                        <!-- Warning Text (allows save) -->
                         <TextBlock x:Name="HotkeyWarningText"
+                                   x:FieldModifier="internal"
                                    Margin="0,5,0,0"
                                    Foreground="#FFB900"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Visibility="Collapsed"/>
+
+                        <!-- Error Text (blocks save) -->
+                        <TextBlock x:Name="HotkeyErrorText"
+                                   x:FieldModifier="internal"
+                                   Margin="0,5,0,0"
+                                   Foreground="#E81123"
                                    FontSize="12"
                                    TextWrapping="Wrap"
                                    Visibility="Collapsed"/>
@@ -78,6 +89,7 @@
 
                             <!-- Data Root TextBox (read-only display) -->
                             <TextBox x:Name="DataRootTextBox"
+                                     x:FieldModifier="internal"
                                      Grid.Column="0"
                                      IsReadOnly="True"
                                      Height="30"
@@ -99,6 +111,7 @@
 
                         <!-- Error Text -->
                         <TextBlock x:Name="DataRootErrorText"
+                                   x:FieldModifier="internal"
                                    Margin="0,5,0,0"
                                    Foreground="#E81123"
                                    FontSize="12"
@@ -114,11 +127,13 @@
 
                         <StackPanel Orientation="Horizontal">
                             <RadioButton x:Name="LanguageGerman"
+                                         x:FieldModifier="internal"
                                          Content="Deutsch"
                                          GroupName="Language"
                                          Margin="0,0,20,0"
                                          Checked="LanguageRadioButton_Checked"/>
                             <RadioButton x:Name="LanguageEnglish"
+                                         x:FieldModifier="internal"
                                          Content="English"
                                          GroupName="Language"
                                          Checked="LanguageRadioButton_Checked"/>
@@ -133,11 +148,13 @@
 
                         <StackPanel Orientation="Horizontal">
                             <RadioButton x:Name="FileFormatMarkdown"
+                                         x:FieldModifier="internal"
                                          Content="Markdown (.md)"
                                          GroupName="FileFormat"
                                          Margin="0,0,20,0"
                                          Checked="FileFormatRadioButton_Checked"/>
                             <RadioButton x:Name="FileFormatTxt"
+                                         x:FieldModifier="internal"
                                          Content="Plain Text (.txt)"
                                          GroupName="FileFormat"
                                          Checked="FileFormatRadioButton_Checked"/>
@@ -152,6 +169,7 @@
 
                         <!-- Model Path Display -->
                         <TextBlock x:Name="ModelPathText"
+                                   x:FieldModifier="internal"
                                    Text="Pfad: (kein Modell konfiguriert)"
                                    Foreground="#666666"
                                    FontSize="12"
@@ -181,6 +199,7 @@
 
                         <!-- Model Status -->
                         <TextBlock x:Name="ModelStatusText"
+                                   x:FieldModifier="internal"
                                    Margin="0,10,0,0"
                                    FontSize="12"
                                    TextWrapping="Wrap"
@@ -295,6 +314,7 @@
 
             <!-- Version Number -->
             <TextBlock x:Name="VersionText"
+                       x:FieldModifier="internal"
                        Grid.Column="0"
                        Text="v0.1.0"
                        VerticalAlignment="Center"
@@ -315,6 +335,7 @@
 
             <!-- Save Button -->
             <Button x:Name="SaveButton"
+                    x:FieldModifier="internal"
                     Grid.Column="3"
                     Content="_Speichern"
                     Width="100"

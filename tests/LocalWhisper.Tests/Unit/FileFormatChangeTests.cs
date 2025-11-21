@@ -13,10 +13,17 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-06-settings.md (FileFormatChangeTests section)
 /// See: docs/ui/settings-window-specification.md (File Format Section)
 /// </remarks>
-[Trait("Batch", "3")]
 public class FileFormatChangeTests
 {
-    [Fact]
+    public FileFormatChangeTests()
+    {
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        var testDir = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_" + Guid.NewGuid());
+        Directory.CreateDirectory(testDir);
+        LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
+    }
+
+    [StaFact]
     public void ChangeFileFormat_MarkdownToTxt_UpdatesConfig()
     {
         // Arrange
@@ -33,7 +40,7 @@ public class FileFormatChangeTests
         window.CurrentFileFormat.Should().Be(".txt");
     }
 
-    [Fact]
+    [StaFact]
     public void ChangeFileFormat_TxtToMarkdown_UpdatesConfig()
     {
         // Arrange
@@ -50,7 +57,7 @@ public class FileFormatChangeTests
         window.CurrentFileFormat.Should().Be(".md");
     }
 
-    [Fact]
+    [StaFact]
     public void SaveFileFormatChange_NoRestartRequired()
     {
         // Arrange
@@ -69,7 +76,7 @@ public class FileFormatChangeTests
         requiresRestart.Should().BeFalse("file format change does NOT require restart");
     }
 
-    [Fact]
+    [StaFact]
     public void FileFormatChange_EnablesSaveButton()
     {
         // Arrange
@@ -85,7 +92,7 @@ public class FileFormatChangeTests
         window.SaveButton.IsEnabled.Should().BeTrue("change detected");
     }
 
-    [Fact]
+    [StaFact]
     public void FileFormatRadioButtons_AreExclusive()
     {
         // Arrange
@@ -102,7 +109,7 @@ public class FileFormatChangeTests
         window.FileFormatMarkdown.IsChecked.Should().BeFalse("only one can be selected");
     }
 
-    [Fact]
+    [StaFact]
     public void InitialFileFormat_Markdown_SelectsCorrectRadioButton()
     {
         // Arrange
@@ -117,7 +124,7 @@ public class FileFormatChangeTests
         window.FileFormatTxt.IsChecked.Should().BeFalse();
     }
 
-    [Fact]
+    [StaFact]
     public void InitialFileFormat_Txt_SelectsCorrectRadioButton()
     {
         // Arrange

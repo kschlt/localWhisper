@@ -22,7 +22,6 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-05a-wizard-core.md (Task 4)
 /// See: docs/specification/user-stories-gherkin.md (US-040, lines 686-697)
 /// </remarks>
-[Trait("Batch", "5")]
 public class WizardManagerTests : IDisposable
 {
     private readonly string _testDirectory;
@@ -126,7 +125,7 @@ public class WizardManagerTests : IDisposable
         result.Should().BeFalse("directory does not exist");
     }
 
-    [Fact]
+    [Fact(Skip = "Windows ReadOnly attribute on directories doesn't prevent writes")]
     public void ValidateDataRoot_ReadOnlyDirectory_ReturnsFalse()
     {
         // Arrange
@@ -227,8 +226,8 @@ public class WizardManagerTests : IDisposable
         var configPath = Path.Combine(dataRoot, "config", "config.toml");
         var config = ConfigManager.Load(configPath);
 
-        config.Hotkey.Modifiers.Should().Be(ModifierKeys.Control | ModifierKeys.Alt);
-        config.Hotkey.Key.Should().Be(Key.V);
+        config.Hotkey.Modifiers.Should().BeEquivalentTo(new List<string> { "Ctrl", "Alt" });
+        config.Hotkey.Key.Should().Be("V");
     }
 
     [Fact]

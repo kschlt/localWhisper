@@ -15,7 +15,6 @@ namespace LocalWhisper.Tests.Unit;
 /// Tests for US-056: Settings - Validation and Error Handling (Config save failure)
 /// See: docs/iterations/iteration-06-settings.md (SettingsPersistenceTests section)
 /// </remarks>
-[Trait("Batch", "3")]
 public class SettingsPersistenceTests : IDisposable
 {
     private readonly string _testDirectory;
@@ -26,6 +25,8 @@ public class SettingsPersistenceTests : IDisposable
         _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_Persistence", Guid.NewGuid().ToString());
         Directory.CreateDirectory(_testDirectory);
         _testConfigPath = Path.Combine(_testDirectory, "config.toml");
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        LocalWhisper.Core.AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
     }
 
     public void Dispose()
@@ -34,7 +35,7 @@ public class SettingsPersistenceTests : IDisposable
             Directory.Delete(_testDirectory, recursive: true);
     }
 
-    [Fact]
+    [StaFact]
     public void Save_WritesToConfigToml()
     {
         // Arrange
@@ -51,7 +52,7 @@ public class SettingsPersistenceTests : IDisposable
         savedContent.Should().Contain("language = \"en\"");
     }
 
-    [Fact]
+    [StaFact]
     public void Save_MultipleChanges_AllPersisted()
     {
         // Arrange
@@ -69,7 +70,7 @@ public class SettingsPersistenceTests : IDisposable
         savedContent.Should().Contain("file_format = \".txt\"");
     }
 
-    [Fact]
+    [StaFact]
     public void Save_WriteFailure_ShowsError()
     {
         // Arrange
@@ -92,7 +93,7 @@ public class SettingsPersistenceTests : IDisposable
         File.SetAttributes(readOnlyPath, FileAttributes.Normal);
     }
 
-    [Fact]
+    [StaFact]
     public void Save_ValidatesBeforeSaving()
     {
         // Arrange
@@ -108,7 +109,7 @@ public class SettingsPersistenceTests : IDisposable
         File.Exists(_testConfigPath).Should().BeFalse("config file should NOT be created");
     }
 
-    [Fact]
+    [StaFact]
     public void Cancel_NoChanges_ClosesImmediately()
     {
         // Arrange
@@ -123,7 +124,7 @@ public class SettingsPersistenceTests : IDisposable
         window.ConfirmationDialogShown.Should().BeFalse("no confirmation should be shown");
     }
 
-    [Fact]
+    [StaFact]
     public void Cancel_WithChanges_ShowsConfirmation()
     {
         // Arrange
@@ -138,7 +139,7 @@ public class SettingsPersistenceTests : IDisposable
         window.ConfirmationDialogShown.Should().BeTrue("confirmation dialog should be shown");
     }
 
-    [Fact]
+    [StaFact]
     public void Save_LogsSettingsChanges()
     {
         // Arrange
@@ -157,7 +158,7 @@ public class SettingsPersistenceTests : IDisposable
         logMessages.Should().Contain(msg => msg.Contains("Language"));
     }
 
-    [Fact]
+    [StaFact]
     public void Save_ClosesWindowAfterSuccess()
     {
         // Arrange
@@ -173,7 +174,7 @@ public class SettingsPersistenceTests : IDisposable
         window.IsClosed.Should().BeTrue("window should close after save");
     }
 
-    [Fact]
+    [StaFact]
     public void Save_WithRestartRequired_ShowsRestartDialog()
     {
         // Arrange

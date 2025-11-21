@@ -9,9 +9,16 @@ namespace LocalWhisper.Tests.Unit;
 /// Unit tests for StateMachine with PostProcessing state.
 /// Tests for US-060 (state machine integration).
 /// </summary>
-[Trait("Batch", "1")]
 public class StateMachinePostProcessingTests
 {
+    public StateMachinePostProcessingTests()
+    {
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        var testDir = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_" + Guid.NewGuid());
+        Directory.CreateDirectory(testDir);
+        LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
+    }
+
     [Fact]
     public void StateMachine_CanTransitionToPostProcessing()
     {
@@ -24,7 +31,7 @@ public class StateMachinePostProcessingTests
         stateMachine.TransitionTo(AppState.PostProcessing);
 
         // Assert
-        stateMachine.CurrentState.Should().Be(AppState.PostProcessing);
+        stateMachine.State.Should().Be(AppState.PostProcessing);
     }
 
     [Fact]
@@ -40,7 +47,7 @@ public class StateMachinePostProcessingTests
         stateMachine.TransitionTo(AppState.Idle);
 
         // Assert
-        stateMachine.CurrentState.Should().Be(AppState.Idle);
+        stateMachine.State.Should().Be(AppState.Idle);
     }
 
     [Fact]
@@ -56,7 +63,7 @@ public class StateMachinePostProcessingTests
         stateMachine.TransitionTo(AppState.Idle);
 
         // Assert
-        stateMachine.CurrentState.Should().Be(AppState.Idle);
+        stateMachine.State.Should().Be(AppState.Idle);
     }
 
     [Fact]

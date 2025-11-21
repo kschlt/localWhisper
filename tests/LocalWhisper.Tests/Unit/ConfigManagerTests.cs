@@ -19,7 +19,6 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-01-hotkey-skeleton.md (Config File section)
 /// See: docs/specification/data-structures.md (lines 49-110)
 /// </remarks>
-[Trait("Batch", "2")]
 public class ConfigManagerTests : IDisposable
 {
     private readonly string _testConfigPath;
