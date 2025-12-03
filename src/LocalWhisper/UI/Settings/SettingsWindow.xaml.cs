@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Ookii.Dialogs.Wpf;
@@ -66,6 +67,9 @@ public partial class SettingsWindow : Window
     private readonly DataRootValidator _dataRootValidator = new();
     private ModelValidator _modelValidator = new();
 
+    // Cancellation for async operations (prevents crashes during window disposal)
+    private readonly CancellationTokenSource _cancellationTokenSource = new();
+
     /// <summary>
     /// Initialize Settings window with current configuration.
     /// </summary>
@@ -114,6 +118,17 @@ public partial class SettingsWindow : Window
         HotkeyTextBox.LostFocus += HotkeyTextBox_LostFocus;
 
         AppLogger.LogInformation("Settings window opened");
+    }
+
+    /// <summary>
+    /// Cancel pending async operations when window closes to prevent crashes.
+    /// </summary>
+    protected override void OnClosed(EventArgs e)
+    {
+        _cancellationTokenSource?.Cancel();
+        _cancellationTokenSource?.Dispose();
+        base.OnClosed(e);
+        AppLogger.LogDebug("Settings window closed and async operations canceled");
     }
 
     /// <summary>
@@ -503,6 +518,13 @@ public partial class SettingsWindow : Window
     /// </summary>
     public async void SetModelPath(string path)
     {
+        // Check if window is closing/disposed
+        if (_cancellationTokenSource.IsCancellationRequested)
+        {
+            AppLogger.LogDebug("SetModelPath canceled - window is closing");
+            return;
+        }
+
         try
         {
             if (File.Exists(path))
@@ -516,7 +538,13 @@ public partial class SettingsWindow : Window
                 UpdateSaveButtonState();
 
                 // Auto-verify new model (US-058)
-                await Task.Delay(100); // Small delay for UI update
+                await Task.Delay(100, _cancellationTokenSource.Token);
+
+                // Check cancellation again before starting async operation
+                if (_cancellationTokenSource.IsCancellationRequested)
+                {
+                    return;
+                }
 
                 // Ensure verification runs on UI thread
                 await Dispatcher.InvokeAsync(() => VerifyModelButton_Click(this, new RoutedEventArgs()));
@@ -533,8 +561,13 @@ public partial class SettingsWindow : Window
         }
         catch (TaskCanceledException)
         {
-            // Ignore cancellation (happens during test cleanup)
+            // Ignore cancellation (happens during window close/disposal)
             AppLogger.LogDebug("SetModelPath operation was canceled");
+        }
+        catch (ObjectDisposedException)
+        {
+            // Window was disposed during async operation - ignore
+            AppLogger.LogDebug("SetModelPath canceled - window was disposed");
         }
     }
 
