@@ -118,8 +118,8 @@ public class ModelVerificationTests : IDisposable
             .Returns((true, "Hash matches"));
         window.SetModelValidator(mockValidator.Object);
 
-        // Act
-        window.SetModelPath(_validModelPath);
+        // Act - Use synchronous helper to avoid async issues
+        window.SetModelPathSync(_validModelPath);
 
         // Assert
         window.CurrentModelPath.Should().Be(_validModelPath);
@@ -139,8 +139,8 @@ public class ModelVerificationTests : IDisposable
             .Returns((false, "Hash mismatch"));
         window.SetModelValidator(mockValidator.Object);
 
-        // Act
-        window.SetModelPath(_invalidModelPath);
+        // Act - Use synchronous helper that waits for async verification
+        window.SetModelPathSync(_invalidModelPath);
 
         // Assert
         window.HasValidationErrors.Should().BeTrue();
@@ -161,8 +161,8 @@ public class ModelVerificationTests : IDisposable
             .Returns((true, "Hash matches"));
         window.SetModelValidator(mockValidator.Object);
 
-        // Act - Only change model path
-        window.SetModelPath(_validModelPath);
+        // Act - Only change model path, use synchronous helper
+        window.SetModelPathSync(_validModelPath);
         var requiresRestart = window.RequiresRestart();
 
         // Assert
@@ -182,8 +182,8 @@ public class ModelVerificationTests : IDisposable
             .Returns((true, "Hash matches"));
         window.SetModelValidator(mockValidator.Object);
 
-        // Act
-        window.SetModelPath(_validModelPath);
+        // Act - Use synchronous helper to avoid async issues
+        window.SetModelPathSync(_validModelPath);
         var updatedConfig = window.BuildConfig();
 
         // Assert

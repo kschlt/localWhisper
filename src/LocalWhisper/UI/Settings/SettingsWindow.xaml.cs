@@ -367,6 +367,9 @@ public partial class SettingsWindow : Window
             return;
         }
 
+        // Fire progress dialog shown event (for testing)
+        OnProgressDialogShown?.Invoke();
+
         // Disable button during verification - ensure UI thread access
         if (Dispatcher.CheckAccess())
         {
@@ -500,30 +503,38 @@ public partial class SettingsWindow : Window
     /// </summary>
     public async void SetModelPath(string path)
     {
-        if (File.Exists(path))
+        try
         {
-            _currentModelPath = path;
-            ModelPathText.Text = $"Pfad: {path}";
-            ModelStatusText.Visibility = Visibility.Collapsed;
-            _hasModelError = false;
+            if (File.Exists(path))
+            {
+                _currentModelPath = path;
+                ModelPathText.Text = $"Pfad: {path}";
+                ModelStatusText.Visibility = Visibility.Collapsed;
+                _hasModelError = false;
 
-            AppLogger.LogInformation("Model path changed", new { NewPath = path });
-            UpdateSaveButtonState();
+                AppLogger.LogInformation("Model path changed", new { NewPath = path });
+                UpdateSaveButtonState();
 
-            // Auto-verify new model (US-058)
-            await Task.Delay(100); // Small delay for UI update
+                // Auto-verify new model (US-058)
+                await Task.Delay(100); // Small delay for UI update
 
-            // Ensure verification runs on UI thread
-            await Dispatcher.InvokeAsync(() => VerifyModelButton_Click(this, new RoutedEventArgs()));
+                // Ensure verification runs on UI thread
+                await Dispatcher.InvokeAsync(() => VerifyModelButton_Click(this, new RoutedEventArgs()));
+            }
+            else
+            {
+                MessageBox.Show(
+                    $"Datei nicht gefunden:\n{path}",
+                    "Fehler",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error
+                );
+            }
         }
-        else
+        catch (TaskCanceledException)
         {
-            MessageBox.Show(
-                $"Datei nicht gefunden:\n{path}",
-                "Fehler",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error
-            );
+            // Ignore cancellation (happens during test cleanup)
+            AppLogger.LogDebug("SetModelPath operation was canceled");
         }
     }
 
@@ -1203,6 +1214,67 @@ public partial class SettingsWindow : Window
         if (task.IsFaulted && task.Exception != null)
         {
             throw task.Exception;
+        }
+    }
+
+    /// <summary>
+    /// Set model path synchronously (for testing).
+    /// Waits for the async auto-verification to complete.
+    /// </summary>
+    internal void SetModelPathSync(string path)
+    {
+        // Ensure we're on UI thread
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.Invoke(() => SetModelPathSync(path));
+            return;
+        }
+
+        // Track the async operation
+        Task? asyncTask = null;
+        bool operationStarted = false;
+
+        // Hook into the progress dialog event to know when verification starts
+        Action? progressHandler = () => operationStarted = true;
+        OnProgressDialogShown += progressHandler;
+
+        try
+        {
+            // Start the async operation
+            SetModelPath(path);
+
+            // Wait for verification to start and complete
+            var timeout = DateTime.Now.AddSeconds(5);
+            while (DateTime.Now < timeout)
+            {
+                // Pump dispatcher messages
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
+                    System.Windows.Threading.DispatcherPriority.Background,
+                    new Action(delegate { }));
+
+                // If verification started, wait a bit more for it to complete
+                if (operationStarted)
+                {
+                    // Give verification time to complete
+                    Thread.Sleep(100);
+                    break;
+                }
+
+                Thread.Sleep(10);
+            }
+
+            // Final message pump to ensure all UI updates complete
+            for (int i = 0; i < 10; i++)
+            {
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
+                    System.Windows.Threading.DispatcherPriority.Background,
+                    new Action(delegate { }));
+                Thread.Sleep(50);
+            }
+        }
+        finally
+        {
+            OnProgressDialogShown -= progressHandler;
         }
     }
 
