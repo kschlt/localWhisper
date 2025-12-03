@@ -139,8 +139,9 @@ public class ModelVerificationTests : IDisposable
             .Returns((false, "Hash mismatch"));
         window.SetModelValidator(mockValidator.Object);
 
-        // Act - Use synchronous helper that waits for async verification
+        // Act - Set path and manually verify (no auto-verification to avoid async issues)
         window.SetModelPathSync(_invalidModelPath);
+        window.VerifyModel();  // Manually trigger verification
 
         // Assert
         window.HasValidationErrors.Should().BeTrue();

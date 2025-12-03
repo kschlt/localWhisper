@@ -1218,63 +1218,28 @@ public partial class SettingsWindow : Window
     }
 
     /// <summary>
-    /// Set model path synchronously (for testing).
-    /// Waits for the async auto-verification to complete.
+    /// Set model path synchronously without auto-verification (for testing).
+    /// Tests should manually call VerifyModel() if verification is needed.
+    /// This avoids async/Dispatcher complexity that causes crashes during test cleanup.
     /// </summary>
     internal void SetModelPathSync(string path)
     {
-        // Ensure we're on UI thread
-        if (!Dispatcher.CheckAccess())
+        if (!File.Exists(path))
         {
-            Dispatcher.Invoke(() => SetModelPathSync(path));
-            return;
+            throw new FileNotFoundException($"Model file not found: {path}");
         }
 
-        bool verificationComplete = false;
+        // Set path without triggering async verification
+        _currentModelPath = path;
+        ModelPathText.Text = $"Pfad: {path}";
+        ModelStatusText.Visibility = Visibility.Collapsed;
+        _hasModelError = false;
 
-        // Hook into verification completion by monitoring HasValidationErrors changes
-        Action? progressHandler = () =>
-        {
-            // After verification starts, schedule a check for completion
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                // Wait a bit for verification to complete
-                Thread.Sleep(200);
-                verificationComplete = true;
-            }), System.Windows.Threading.DispatcherPriority.Background);
-        };
+        AppLogger.LogInformation("Model path changed (test mode)", new { NewPath = path });
+        UpdateSaveButtonState();
 
-        OnProgressDialogShown += progressHandler;
-
-        try
-        {
-            // Start the async operation
-            SetModelPath(path);
-
-            // Use DispatcherFrame to pump messages without aggressive looping
-            // This is the WPF-recommended way to wait for async operations
-            var frame = new System.Windows.Threading.DispatcherFrame();
-
-            var timeout = DateTime.Now.AddSeconds(2);
-            System.Windows.Threading.DispatcherTimer timer = new System.Windows.Threading.DispatcherTimer();
-            timer.Interval = TimeSpan.FromMilliseconds(50);
-            timer.Tick += (s, e) =>
-            {
-                if (verificationComplete || DateTime.Now > timeout)
-                {
-                    frame.Continue = false;
-                    timer.Stop();
-                }
-            };
-            timer.Start();
-
-            // Pump messages until verification completes or timeout
-            System.Windows.Threading.Dispatcher.PushFrame(frame);
-        }
-        finally
-        {
-            OnProgressDialogShown -= progressHandler;
-        }
+        // Note: No auto-verification to avoid async/timer/Dispatcher cleanup issues.
+        // Tests should call VerifyModel() explicitly if verification is needed.
     }
 
     /// <summary>
