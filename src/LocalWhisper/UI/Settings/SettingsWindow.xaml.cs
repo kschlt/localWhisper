@@ -1230,12 +1230,20 @@ public partial class SettingsWindow : Window
             return;
         }
 
-        // Track the async operation
-        Task? asyncTask = null;
-        bool operationStarted = false;
+        bool verificationComplete = false;
 
-        // Hook into the progress dialog event to know when verification starts
-        Action? progressHandler = () => operationStarted = true;
+        // Hook into verification completion by monitoring HasValidationErrors changes
+        Action? progressHandler = () =>
+        {
+            // After verification starts, schedule a check for completion
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                // Wait a bit for verification to complete
+                Thread.Sleep(200);
+                verificationComplete = true;
+            }), System.Windows.Threading.DispatcherPriority.Background);
+        };
+
         OnProgressDialogShown += progressHandler;
 
         try
@@ -1243,34 +1251,25 @@ public partial class SettingsWindow : Window
             // Start the async operation
             SetModelPath(path);
 
-            // Wait for verification to start and complete
-            var timeout = DateTime.Now.AddSeconds(5);
-            while (DateTime.Now < timeout)
-            {
-                // Pump dispatcher messages
-                System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
-                    System.Windows.Threading.DispatcherPriority.Background,
-                    new Action(delegate { }));
+            // Use DispatcherFrame to pump messages without aggressive looping
+            // This is the WPF-recommended way to wait for async operations
+            var frame = new System.Windows.Threading.DispatcherFrame();
 
-                // If verification started, wait a bit more for it to complete
-                if (operationStarted)
+            var timeout = DateTime.Now.AddSeconds(2);
+            System.Windows.Threading.DispatcherTimer timer = new System.Windows.Threading.DispatcherTimer();
+            timer.Interval = TimeSpan.FromMilliseconds(50);
+            timer.Tick += (s, e) =>
+            {
+                if (verificationComplete || DateTime.Now > timeout)
                 {
-                    // Give verification time to complete
-                    Thread.Sleep(100);
-                    break;
+                    frame.Continue = false;
+                    timer.Stop();
                 }
+            };
+            timer.Start();
 
-                Thread.Sleep(10);
-            }
-
-            // Final message pump to ensure all UI updates complete
-            for (int i = 0; i < 10; i++)
-            {
-                System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
-                    System.Windows.Threading.DispatcherPriority.Background,
-                    new Action(delegate { }));
-                Thread.Sleep(50);
-            }
+            // Pump messages until verification completes or timeout
+            System.Windows.Threading.Dispatcher.PushFrame(frame);
         }
         finally
         {
