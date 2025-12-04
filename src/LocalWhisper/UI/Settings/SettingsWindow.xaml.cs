@@ -408,10 +408,21 @@ public partial class SettingsWindow : Window
             // SHA-1 hash verification (US-058)
             var progress = new Progress<double>(_ => { });
 
-            // Compute SHA-1 hash (runs in background thread)
-            var (isValid, message) = await Task.Run(() =>
+            // Compute SHA-1 hash (runs in background thread) with 10-second timeout
+            var validationTask = Task.Run(() =>
                 _modelValidator.ValidateModel(_currentModelPath, "", progress)
             );
+
+            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(10));
+            var completedTask = await Task.WhenAny(validationTask, timeoutTask);
+
+            if (completedTask == timeoutTask)
+            {
+                AppLogger.LogWarning("Model validation timed out after 10 seconds", new { ModelPath = _currentModelPath });
+                throw new TimeoutException("Model validation timed out");
+            }
+
+            var (isValid, message) = await validationTask;
 
             // Update UI on UI thread
             Action updateUI = () =>
@@ -1217,12 +1228,21 @@ public partial class SettingsWindow : Window
             return;
         }
 
-        // Run async task synchronously with proper message pumping
+        // Run async task synchronously with proper message pumping and 10-second timeout
         var task = VerifyModelAsync();
+        var startTime = DateTime.UtcNow;
+        var timeout = TimeSpan.FromSeconds(10);
 
         // Wait for task completion by pumping dispatcher messages
         while (!task.IsCompleted)
         {
+            // Check timeout
+            if (DateTime.UtcNow - startTime > timeout)
+            {
+                AppLogger.LogWarning("VerifyModel() timed out after 10 seconds in message pump");
+                throw new TimeoutException("Model verification timed out in message pump loop");
+            }
+
             // Process messages to prevent UI freeze and allow async operations to complete
             System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(
                 System.Windows.Threading.DispatcherPriority.Background,
