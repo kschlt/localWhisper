@@ -193,6 +193,18 @@ public partial class WizardWindow : Window
 
             DataRoot = _dataRootStep.GetDataRoot();
 
+            // Create directory if it doesn't exist (safe for default path)
+            try
+            {
+                Directory.CreateDirectory(DataRoot);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.LogError("Failed to create data root directory", ex, new { DataRoot });
+                MessageBox.Show($"Fehler beim Erstellen des Ordners:\n\n{ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
             // Validate write access
             if (!_manager.ValidateDataRoot(DataRoot))
             {

@@ -11,7 +11,7 @@ namespace LocalWhisper.UI.Wizard;
 /// </summary>
 /// <remarks>
 /// Implements US-040: Wizard Step 1 - Data Root Selection
-/// - Default path: %LOCALAPPDATA%\SpeechClipboardApp\
+/// - Default path: %LOCALAPPDATA%\LocalWhisper\
 /// - Browse button using Ookii.Dialogs.Wpf
 /// - Validates write access
 ///
@@ -29,7 +29,7 @@ public partial class DataRootStep : UserControl
 
         // Set default data root
         var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        _dataRoot = Path.Combine(appDataPath, "SpeechClipboardApp");
+        _dataRoot = Path.Combine(appDataPath, "LocalWhisper");
 
         DataRootTextBox.Text = _dataRoot;
     }
