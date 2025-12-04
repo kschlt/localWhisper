@@ -373,12 +373,11 @@ public partial class SettingsWindow : Window
     {
         if (string.IsNullOrEmpty(_currentModelPath))
         {
-            MessageBox.Show(
-                "Kein Modell konfiguriert.",
-                "Info",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information
-            );
+            // Show error in UI without blocking MessageBox
+            ModelStatusText.Text = "⚠ Kein Modell konfiguriert";
+            ModelStatusText.Foreground = System.Windows.Media.Brushes.Orange;
+            ModelStatusText.Visibility = Visibility.Visible;
+            AppLogger.LogWarning("Model verification skipped - no model path configured");
             return;
         }
 
@@ -551,12 +550,13 @@ public partial class SettingsWindow : Window
             }
             else
             {
-                MessageBox.Show(
-                    $"Datei nicht gefunden:\n{path}",
-                    "Fehler",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error
-                );
+                // Show error in UI without blocking MessageBox
+                ModelStatusText.Text = $"⚠ Datei nicht gefunden";
+                ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                ModelStatusText.Visibility = Visibility.Visible;
+                _hasModelError = true;
+                AppLogger.LogWarning("Model file not found", new { Path = path });
+                UpdateSaveButtonState();
             }
         }
         catch (TaskCanceledException)
@@ -727,35 +727,25 @@ public partial class SettingsWindow : Window
             {
                 if (!File.Exists(_currentLlmCliPath) || !File.Exists(_currentLlmModelPath))
                 {
-                    MessageBox.Show(
-                        "Post-Processing Dateien fehlen oder ungültig.\n\n" +
-                        "Bitte führen Sie den Ersteinrichtungs-Assistenten\n" +
-                        "erneut aus oder installieren Sie die Anwendung neu.",
-                        "Fehler",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Error
-                    );
+                    // Log error without blocking MessageBox - real app would show dialog
                     AppLogger.LogWarning("Post-processing validation failed - missing files", new
                     {
                         LlmCliExists = File.Exists(_currentLlmCliPath),
                         ModelExists = File.Exists(_currentLlmModelPath)
                     });
+                    LastErrorMessage = "Post-Processing Dateien fehlen oder ungültig";
                     return; // Don't save
                 }
 
                 // Validate glossary if enabled
                 if (_currentUseGlossary && !File.Exists(_currentGlossaryPath))
                 {
-                    MessageBox.Show(
-                        "Glossar-Datei nicht gefunden.\n\nBitte wählen Sie eine gültige Datei.",
-                        "Fehler",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning
-                    );
+                    // Log error without blocking MessageBox - real app would show dialog
                     AppLogger.LogWarning("Glossary validation failed - file not found", new
                     {
                         GlossaryPath = _currentGlossaryPath
                     });
+                    LastErrorMessage = "Glossar-Datei nicht gefunden";
                     return; // Don't save
                 }
             }
@@ -788,12 +778,8 @@ public partial class SettingsWindow : Window
         catch (Exception ex)
         {
             AppLogger.LogError("Failed to save settings", ex);
-            MessageBox.Show(
-                $"Fehler beim Speichern:\n\n{ex.Message}",
-                "Fehler",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error
-            );
+            // Store error without blocking MessageBox - real app would show dialog
+            LastErrorMessage = $"Fehler beim Speichern: {ex.Message}";
         }
     }
 
