@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="White">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
+    <ScrollViewer x:Name="StepScrollViewer" VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="40,30">
             <TextBlock Text="Whisper-Modell auswählen"
                       FontSize="16"

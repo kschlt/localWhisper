@@ -45,7 +45,22 @@ public partial class ModelSelectionStep : UserControl
 
         LoadModelsForLanguage(_selectedLanguage);
 
+        // Enable button if model was auto-selected during LoadModelsForLanguage
+        if (ModelGrid.SelectedItem is ModelDefinition)
+        {
+            _selectedModel = ModelGrid.SelectedItem as ModelDefinition;
+            BrowseModelButton.IsEnabled = true;
+        }
+
         _isInitialized = true; // Mark as fully initialized
+    }
+
+    /// <summary>
+    /// Reset scroll position to top when step is loaded
+    /// </summary>
+    public void ResetScrollPosition()
+    {
+        StepScrollViewer.ScrollToTop();
     }
 
     private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

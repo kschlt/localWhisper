@@ -83,6 +83,7 @@ public partial class WizardWindow : Window
                     _modelSelectionStep.ModelChanged += (s, e) => NextButton.IsEnabled = _modelSelectionStep.IsValid();
                 }
                 ContentArea.Content = _modelSelectionStep;
+                _modelSelectionStep.ResetScrollPosition(); // Ensure scroll starts at top
                 NextButton.IsEnabled = _modelSelectionStep.IsValid();
                 break;
 
