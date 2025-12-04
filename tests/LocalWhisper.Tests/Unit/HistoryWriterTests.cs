@@ -21,7 +21,6 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-04-clipboard-history-flyout.md (US-031)
 /// See: docs/specification/user-stories-gherkin.md (lines 447-495)
 /// </remarks>
-[Trait("Batch", "5")]
 public class HistoryWriterTests : IDisposable
 {
     private readonly string _testDirectory;
@@ -33,6 +32,10 @@ public class HistoryWriterTests : IDisposable
         _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisperTests", Guid.NewGuid().ToString());
         Directory.CreateDirectory(_testDirectory);
 
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        LocalWhisper.Core.AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
+
+        // Create HistoryWriter instance (stateless service, no constructor parameters)
         _historyWriter = new HistoryWriter();
     }
 

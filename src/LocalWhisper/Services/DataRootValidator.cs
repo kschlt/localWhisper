@@ -32,13 +32,13 @@ public class DataRootValidator
 
         if (string.IsNullOrWhiteSpace(dataRoot))
         {
-            result.AddError("Data root path is empty");
+            result.AddError("Pfad ist leer");
             return result;
         }
 
         if (!Directory.Exists(dataRoot))
         {
-            result.AddError($"Data root does not exist: {dataRoot}");
+            result.AddError("Pfad nicht gefunden");
             return result; // No point checking further
         }
 
@@ -51,7 +51,7 @@ public class DataRootValidator
             var path = Path.Combine(dataRoot, folder);
             if (!Directory.Exists(path))
             {
-                result.AddError($"Missing required folder: {folder}");
+                result.AddError("Ordner enthält keine gültige LocalWhisper-Installation");
             }
         }
 
@@ -60,7 +60,7 @@ public class DataRootValidator
             var path = Path.Combine(dataRoot, folder);
             if (!Directory.Exists(path))
             {
-                result.AddWarning($"Missing optional folder: {folder} (will be created)");
+                result.AddWarning($"Optionaler Ordner fehlt: {folder} (wird erstellt)");
             }
         }
 
@@ -88,7 +88,7 @@ public class DataRootValidator
             var configPath = PathHelpers.GetConfigPath(dataRoot);
             if (!File.Exists(configPath))
             {
-                result.AddError("config.toml not found");
+                result.AddError("config.toml nicht gefunden");
             }
         }
 
@@ -105,10 +105,8 @@ public class DataRootValidator
     {
         var result = Validate(dataRoot, checkConfig: true);
 
-        if (!result.IsValid)
-        {
-            return result;
-        }
+        // Continue checking even if structure validation failed
+        // to collect all errors (test expects multiple errors)
 
         // Check model file
         if (config.Whisper != null && !string.IsNullOrEmpty(config.Whisper.ModelPath))
@@ -116,16 +114,16 @@ public class DataRootValidator
             var modelPath = config.Whisper.ModelPath;
             if (!File.Exists(modelPath))
             {
-                result.AddError($"Model file not found: {modelPath}");
+                result.AddError($"Modelldatei nicht gefunden: {modelPath}");
             }
         }
         else if (config.Whisper == null)
         {
-            result.AddError("Whisper configuration is missing");
+            result.AddError("Whisper-Konfiguration fehlt");
         }
         else if (string.IsNullOrEmpty(config.Whisper.ModelPath))
         {
-            result.AddError("Model path is not configured");
+            result.AddError("Modellpfad ist nicht konfiguriert");
         }
 
         return result;

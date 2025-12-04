@@ -19,7 +19,6 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-02-audio-recording.md (US-010)
 /// See: docs/specification/user-stories-gherkin.md (lines 146-182)
 /// </remarks>
-[Trait("Batch", "1")]
 public class AudioRecorderTests : IDisposable
 {
     private readonly string _testDirectory;
@@ -30,6 +29,9 @@ public class AudioRecorderTests : IDisposable
         // Create temporary test directory
         _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisperTests", Guid.NewGuid().ToString());
         Directory.CreateDirectory(_testDirectory);
+
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        LocalWhisper.Core.AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
 
         // Initialize AudioRecorder
         _audioRecorder = new AudioRecorder();

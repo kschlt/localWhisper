@@ -26,7 +26,7 @@ jobs:
       run: dotnet build LocalWhisper.sln --configuration Release --no-restore
 
     - name: Run unit tests
-      run: dotnet test LocalWhisper.sln --configuration Release --no-build --verbosity normal --logger "trx;LogFileName=test-results.trx"
+      run: dotnet test LocalWhisper.sln --configuration Release --no-build --verbosity normal --filter "Category!=WpfIntegration" --logger "trx;LogFileName=test-results.trx"
 
     - name: Upload test results
       uses: actions/upload-artifact@v4

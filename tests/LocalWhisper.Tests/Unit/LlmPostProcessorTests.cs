@@ -10,7 +10,6 @@ namespace LocalWhisper.Tests.Unit;
 /// Unit tests for LlmPostProcessor service.
 /// Tests for US-060, US-061, US-062 (Post-processing core logic).
 /// </summary>
-[Trait("Batch", "4")]
 public class LlmPostProcessorTests
 {
     private readonly string _testDirectory;
@@ -19,6 +18,9 @@ public class LlmPostProcessorTests
     {
         _testDirectory = Path.Combine(Path.GetTempPath(), "LocalWhisper_LlmTests_" + Guid.NewGuid());
         Directory.CreateDirectory(_testDirectory);
+
+        // Initialize AppLogger with Error level to reduce test output verbosity
+        LocalWhisper.Core.AppLogger.Initialize(_testDirectory, Serilog.Events.LogEventLevel.Error);
     }
 
     [Fact]

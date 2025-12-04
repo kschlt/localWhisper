@@ -31,7 +31,7 @@ public class ModelValidator
     /// <param name="expectedHash">Expected SHA-1 hash (hexadecimal string)</param>
     /// <param name="progress">Optional progress callback (reports 0.0 to 1.0)</param>
     /// <returns>Tuple (isValid, message)</returns>
-    public (bool IsValid, string Message) ValidateModel(string modelPath, string expectedHash, IProgress<double>? progress = null)
+    public virtual (bool IsValid, string Message) ValidateModel(string modelPath, string expectedHash, IProgress<double>? progress = null)
     {
         try
         {
@@ -76,7 +76,7 @@ public class ModelValidator
     /// <param name="progress">Optional progress callback (reports 0.0 to 1.0)</param>
     /// <returns>True if validation successful, false otherwise</returns>
     /// <exception cref="FileNotFoundException">If model file does not exist</exception>
-    public async Task<bool> ValidateAsync(string modelPath, string expectedHash, IProgress<double>? progress = null)
+    public virtual async Task<bool> ValidateAsync(string modelPath, string expectedHash, IProgress<double>? progress = null)
     {
         return await Task.Run(() =>
         {
@@ -146,7 +146,7 @@ public class ModelValidator
     /// </summary>
     /// <param name="modelPath">Path to model file</param>
     /// <returns>True if file exists and has reasonable size</returns>
-    public bool QuickValidate(string modelPath)
+    public virtual bool QuickValidate(string modelPath)
     {
         if (!File.Exists(modelPath))
             return false;
