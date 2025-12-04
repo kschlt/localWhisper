@@ -32,6 +32,14 @@ public class RestartLogicTests : IDisposable
         return window;
     }
 
+    public void Dispose()
+    {
+        foreach (var window in _windows)
+        {
+            try { window.Close(); } catch { }
+        }
+    }
+
     [StaFact]
     public void SaveHotkeyChange_ShowsRestartDialog()
     {

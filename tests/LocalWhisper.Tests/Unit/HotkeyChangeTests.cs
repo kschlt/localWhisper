@@ -24,12 +24,20 @@ public class HotkeyChangeTests : IDisposable
         LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
     }
 
-    
+
     private SettingsWindow CreateWindow(AppConfig config, string configPath = "C:\\Test\\config.toml")
     {
         var window = new SettingsWindow(config, configPath);
         _windows.Add(window);
         return window;
+    }
+
+    public void Dispose()
+    {
+        foreach (var window in _windows)
+        {
+            try { window.Close(); } catch { }
+        }
     }
 
     [StaFact]

@@ -33,6 +33,14 @@ public class SettingsWindowTests : IDisposable
         return window;
     }
 
+    public void Dispose()
+    {
+        foreach (var window in _windows)
+        {
+            try { window.Close(); } catch { }
+        }
+    }
+
     [StaFact]
     public void OpenSettings_LoadsCurrentConfig_PopulatesFields()
     {
