@@ -13,8 +13,9 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-06-settings.md (LanguageChangeTests section)
 /// See: docs/ui/settings-window-specification.md (Language Section)
 /// </remarks>
-public class LanguageChangeTests
+public class LanguageChangeTests : IDisposable
 {
+    private readonly List<System.Windows.Window> _windows = new();
     public LanguageChangeTests()
     {
         // Initialize AppLogger with Error level to reduce test output verbosity
@@ -23,13 +24,21 @@ public class LanguageChangeTests
         LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
     }
 
+    
+    private SettingsWindow CreateWindow(AppConfig config, string configPath = "C:\\Test\\config.toml")
+    {
+        var window = new SettingsWindow(config, configPath);
+        _windows.Add(window);
+        return window;
+    }
+
     [StaFact]
     public void ChangeLanguage_GermanToEnglish_UpdatesConfig()
     {
         // Arrange
         var config = CreateDefaultConfig();
         config.Language = "de";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.LanguageEnglish.IsChecked = true;
@@ -46,7 +55,7 @@ public class LanguageChangeTests
         // Arrange
         var config = CreateDefaultConfig();
         config.Language = "en";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.LanguageGerman.IsChecked = true;
@@ -63,7 +72,7 @@ public class LanguageChangeTests
         // Arrange
         var config = CreateDefaultConfig();
         config.Language = "de";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.LanguageEnglish.IsChecked = true;
@@ -79,7 +88,7 @@ public class LanguageChangeTests
         // Arrange
         var config = CreateDefaultConfig();
         config.Language = "de";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
         window.SaveButton.IsEnabled.Should().BeFalse("initially disabled");
 
         // Act
@@ -95,7 +104,7 @@ public class LanguageChangeTests
         // Arrange
         var config = CreateDefaultConfig();
         config.Language = "de";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
         window.LanguageGerman.IsChecked.Should().BeTrue("initially German");
 
         // Act
@@ -114,7 +123,7 @@ public class LanguageChangeTests
         config.Language = "de";
 
         // Act
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Assert
         window.LanguageGerman.IsChecked.Should().BeTrue();
@@ -129,7 +138,7 @@ public class LanguageChangeTests
         config.Language = "en";
 
         // Act
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Assert
         window.LanguageEnglish.IsChecked.Should().BeTrue();

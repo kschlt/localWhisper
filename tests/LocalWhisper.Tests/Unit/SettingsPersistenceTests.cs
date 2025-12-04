@@ -17,6 +17,7 @@ namespace LocalWhisper.Tests.Unit;
 /// </remarks>
 public class SettingsPersistenceTests : IDisposable
 {
+    private readonly List<System.Windows.Window> _windows = new();
     private readonly string _testDirectory;
     private readonly string _testConfigPath;
 
@@ -31,8 +32,22 @@ public class SettingsPersistenceTests : IDisposable
 
     public void Dispose()
     {
+        foreach (var window in _windows)
+        {
+            try { window.Close(); } catch { }
+        }
+
+
         if (Directory.Exists(_testDirectory))
             Directory.Delete(_testDirectory, recursive: true);
+    }
+
+    
+    private SettingsWindow CreateWindow(AppConfig config, string configPath = "C:\\Test\\config.toml")
+    {
+        var window = CreateWindow(config, configPath);
+        _windows.Add(window);
+        return window;
     }
 
     [StaFact]
@@ -40,7 +55,7 @@ public class SettingsPersistenceTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, _testConfigPath);
+        var window = CreateWindow(config, _testConfigPath);
         window.LanguageEnglish.IsChecked = true;
 
         // Act
@@ -57,7 +72,7 @@ public class SettingsPersistenceTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, _testConfigPath);
+        var window = CreateWindow(config, _testConfigPath);
 
         // Act - Make multiple changes
         window.LanguageEnglish.IsChecked = true;
@@ -79,7 +94,7 @@ public class SettingsPersistenceTests : IDisposable
         File.WriteAllText(readOnlyPath, "existing content");
         File.SetAttributes(readOnlyPath, FileAttributes.ReadOnly);
 
-        var window = new SettingsWindow(config, readOnlyPath);
+        var window = CreateWindow(config, readOnlyPath);
         window.LanguageEnglish.IsChecked = true;
 
         // Act
@@ -98,7 +113,7 @@ public class SettingsPersistenceTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, _testConfigPath);
+        var window = CreateWindow(config, _testConfigPath);
         window.SetDataRoot("C:\\NonExistent\\Path");
 
         // Act
@@ -114,7 +129,7 @@ public class SettingsPersistenceTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, _testConfigPath);
+        var window = CreateWindow(config, _testConfigPath);
 
         // Act
         var closeResult = window.Cancel();
@@ -129,7 +144,7 @@ public class SettingsPersistenceTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, _testConfigPath);
+        var window = CreateWindow(config, _testConfigPath);
         window.LanguageEnglish.IsChecked = true; // Make a change
 
         // Act
@@ -144,7 +159,7 @@ public class SettingsPersistenceTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, _testConfigPath);
+        var window = CreateWindow(config, _testConfigPath);
         window.LanguageEnglish.IsChecked = true;
 
         var logMessages = new List<string>();
@@ -163,7 +178,7 @@ public class SettingsPersistenceTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, _testConfigPath);
+        var window = CreateWindow(config, _testConfigPath);
         window.FileFormatTxt.IsChecked = true; // Change that doesn't require restart
 
         // Act
@@ -179,7 +194,7 @@ public class SettingsPersistenceTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, _testConfigPath);
+        var window = CreateWindow(config, _testConfigPath);
         window.LanguageEnglish.IsChecked = true; // Language change requires restart
 
         // Act

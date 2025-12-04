@@ -13,8 +13,9 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-06-settings.md (RestartLogicTests section)
 /// See: docs/ui/settings-window-specification.md (Restart Dialog section)
 /// </remarks>
-public class RestartLogicTests
+public class RestartLogicTests : IDisposable
 {
+    private readonly List<System.Windows.Window> _windows = new();
     public RestartLogicTests()
     {
         // Initialize AppLogger with Error level to reduce test output verbosity
@@ -23,12 +24,20 @@ public class RestartLogicTests
         LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
     }
 
+    
+    private SettingsWindow CreateWindow(AppConfig config, string configPath = "C:\\Test\\config.toml")
+    {
+        var window = new SettingsWindow(config, configPath);
+        _windows.Add(window);
+        return window;
+    }
+
     [StaFact]
     public void SaveHotkeyChange_ShowsRestartDialog()
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
         window.SetHotkey("Ctrl", "Alt", "V");
 
         // Act
@@ -44,7 +53,7 @@ public class RestartLogicTests
         // Arrange
         var config = CreateDefaultConfig();
         config.Language = "de";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
         window.LanguageEnglish.IsChecked = true;
 
         // Act
@@ -59,7 +68,7 @@ public class RestartLogicTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Create valid test data root
         var newDataRoot = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_Restart", Guid.NewGuid().ToString());
@@ -89,7 +98,7 @@ public class RestartLogicTests
         // Arrange
         var config = CreateDefaultConfig();
         config.FileFormat = ".md";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
         window.FileFormatTxt.IsChecked = true;
 
         // Act
@@ -104,7 +113,7 @@ public class RestartLogicTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         var restartDialogCount = 0;
         window.OnRestartDialogShown += () => restartDialogCount++;
@@ -123,7 +132,7 @@ public class RestartLogicTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
         window.LanguageEnglish.IsChecked = true;
 
         var restartCalled = false;
@@ -142,7 +151,7 @@ public class RestartLogicTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
         window.LanguageEnglish.IsChecked = true;
 
         var restartCalled = false;
@@ -162,7 +171,7 @@ public class RestartLogicTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.SetHotkey("Ctrl", "Alt", "V");
@@ -178,7 +187,7 @@ public class RestartLogicTests
         // Arrange
         var config = CreateDefaultConfig();
         config.Language = "de";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.LanguageEnglish.IsChecked = true;
@@ -194,7 +203,7 @@ public class RestartLogicTests
         // Arrange
         var config = CreateDefaultConfig();
         config.FileFormat = ".md";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.FileFormatTxt.IsChecked = true;
@@ -209,7 +218,7 @@ public class RestartLogicTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Create temporary model file
         var tempModelPath = Path.Combine(Path.GetTempPath(), $"test-model-{Guid.NewGuid()}.bin");

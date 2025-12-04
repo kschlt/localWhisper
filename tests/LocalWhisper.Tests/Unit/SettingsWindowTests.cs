@@ -14,14 +14,23 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-06-settings.md (SettingsWindowTests section)
 /// See: docs/ui/settings-window-specification.md
 /// </remarks>
-public class SettingsWindowTests
+public class SettingsWindowTests : IDisposable
 {
+    private readonly List<System.Windows.Window> _windows = new();
     public SettingsWindowTests()
     {
         // Initialize AppLogger with Error level to reduce test output verbosity
         var testDir = Path.Combine(Path.GetTempPath(), "LocalWhisperTests_" + Guid.NewGuid());
         Directory.CreateDirectory(testDir);
         LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
+    }
+
+    
+    private SettingsWindow CreateWindow(AppConfig config, string configPath = "C:\\Test\\config.toml")
+    {
+        var window = new SettingsWindow(config, configPath);
+        _windows.Add(window);
+        return window;
     }
 
     [StaFact]
@@ -38,7 +47,7 @@ public class SettingsWindowTests
         };
 
         // Act
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Assert
         window.Should().NotBeNull();
@@ -54,7 +63,7 @@ public class SettingsWindowTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act & Assert
         window.SaveButton.IsEnabled.Should().BeFalse("no changes have been made yet");
@@ -67,7 +76,7 @@ public class SettingsWindowTests
         var config = CreateDefaultConfig();
 
         // Act
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Assert
         window.ShowInTaskbar.Should().BeFalse();
@@ -82,7 +91,7 @@ public class SettingsWindowTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         var versionText = window.VersionText.Text;
@@ -96,7 +105,7 @@ public class SettingsWindowTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
         window.SaveButton.IsEnabled.Should().BeFalse("initially disabled");
 
         // Act - Simulate changing language
@@ -112,7 +121,7 @@ public class SettingsWindowTests
         // Arrange
         var config = CreateDefaultConfig();
         config.Language = "de";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act - Change then revert
         window.LanguageEnglish.IsChecked = true; // Change to English
@@ -128,7 +137,7 @@ public class SettingsWindowTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act - Set invalid data root
         window.SetDataRoot("C:\\NonExistent\\Invalid");
@@ -143,7 +152,7 @@ public class SettingsWindowTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.LanguageEnglish.IsChecked = true;
@@ -157,7 +166,7 @@ public class SettingsWindowTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act & Assert
         window.HasChanges().Should().BeFalse("no changes made");

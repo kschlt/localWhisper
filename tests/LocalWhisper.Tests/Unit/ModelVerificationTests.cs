@@ -17,6 +17,7 @@ namespace LocalWhisper.Tests.Unit;
 /// </remarks>
 public class ModelVerificationTests : IDisposable
 {
+    private readonly List<System.Windows.Window> _windows = new();
     private readonly string _testDirectory;
     private readonly string _validModelPath;
     private readonly string _invalidModelPath;
@@ -38,8 +39,20 @@ public class ModelVerificationTests : IDisposable
         File.WriteAllText(_invalidModelPath, "invalid model content");
     }
 
+    private SettingsWindow CreateWindow(AppConfig config, string configPath = "C:\\Test\\config.toml")
+    {
+        var window = new SettingsWindow(config, configPath);
+        _windows.Add(window);
+        return window;
+    }
+
     public void Dispose()
     {
+        foreach (var window in _windows)
+        {
+            try { window.Close(); } catch { }
+        }
+
         if (Directory.Exists(_testDirectory))
             Directory.Delete(_testDirectory, recursive: true);
     }
@@ -50,7 +63,7 @@ public class ModelVerificationTests : IDisposable
         // Arrange
         var config = CreateDefaultConfig();
         config.Whisper.ModelPath = _validModelPath;
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Mock ModelValidator to return valid
         var mockValidator = new Mock<ModelValidator>();
@@ -72,7 +85,7 @@ public class ModelVerificationTests : IDisposable
         // Arrange
         var config = CreateDefaultConfig();
         config.Whisper.ModelPath = _invalidModelPath;
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Mock ModelValidator to return invalid
         var mockValidator = new Mock<ModelValidator>();
@@ -94,7 +107,7 @@ public class ModelVerificationTests : IDisposable
         // Arrange
         var config = CreateDefaultConfig();
         config.Whisper.ModelPath = _validModelPath;
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         var progressShown = false;
@@ -110,7 +123,7 @@ public class ModelVerificationTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Mock ModelValidator to return valid
         var mockValidator = new Mock<ModelValidator>();
@@ -131,7 +144,7 @@ public class ModelVerificationTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Mock ModelValidator to return invalid
         var mockValidator = new Mock<ModelValidator>();
@@ -154,7 +167,7 @@ public class ModelVerificationTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Mock ModelValidator
         var mockValidator = new Mock<ModelValidator>();
@@ -175,7 +188,7 @@ public class ModelVerificationTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Mock ModelValidator
         var mockValidator = new Mock<ModelValidator>();

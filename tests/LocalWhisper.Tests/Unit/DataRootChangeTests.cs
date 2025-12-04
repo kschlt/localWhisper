@@ -18,6 +18,7 @@ public class DataRootChangeTests : IDisposable
 {
     private readonly string _validTestDataRoot;
     private readonly string _invalidTestDataRoot;
+    private readonly List<System.Windows.Window> _windows = new();
 
     public DataRootChangeTests()
     {
@@ -39,9 +40,25 @@ public class DataRootChangeTests : IDisposable
         Directory.CreateDirectory(_invalidTestDataRoot);
     }
 
+    /// <summary>
+    /// Helper to create SettingsWindow and track for cleanup.
+    /// </summary>
+    private SettingsWindow CreateWindow(AppConfig config, string configPath = "C:\\Test\\config.toml")
+    {
+        var window = new SettingsWindow(config, configPath);
+        _windows.Add(window);
+        return window;
+    }
+
     public void Dispose()
     {
-        // Cleanup
+        // Close all windows
+        foreach (var window in _windows)
+        {
+            try { window.Close(); } catch { /* Ignore errors during cleanup */ }
+        }
+
+        // Cleanup directories
         if (Directory.Exists(_validTestDataRoot))
             Directory.Delete(_validTestDataRoot, recursive: true);
         if (Directory.Exists(_invalidTestDataRoot))
@@ -53,7 +70,7 @@ public class DataRootChangeTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.SetDataRoot(_validTestDataRoot);
@@ -69,7 +86,7 @@ public class DataRootChangeTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.SetDataRoot(_invalidTestDataRoot);
@@ -86,7 +103,7 @@ public class DataRootChangeTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.SetDataRoot("C:\\NonExistent\\Path\\That\\Does\\Not\\Exist");
@@ -126,7 +143,7 @@ public class DataRootChangeTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
         window.SetDataRoot(_validTestDataRoot);
 
         // Act
@@ -141,7 +158,7 @@ public class DataRootChangeTests : IDisposable
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.SetDataRoot(_validTestDataRoot);

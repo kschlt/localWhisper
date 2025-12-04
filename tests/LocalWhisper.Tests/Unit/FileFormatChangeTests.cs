@@ -13,8 +13,10 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-06-settings.md (FileFormatChangeTests section)
 /// See: docs/ui/settings-window-specification.md (File Format Section)
 /// </remarks>
-public class FileFormatChangeTests
+public class FileFormatChangeTests : IDisposable
 {
+    private readonly List<System.Windows.Window> _windows = new();
+
     public FileFormatChangeTests()
     {
         // Initialize AppLogger with Error level to reduce test output verbosity
@@ -23,13 +25,28 @@ public class FileFormatChangeTests
         LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
     }
 
+    private SettingsWindow CreateWindow(AppConfig config, string configPath = "C:\\Test\\config.toml")
+    {
+        var window = new SettingsWindow(config, configPath);
+        _windows.Add(window);
+        return window;
+    }
+
+    public void Dispose()
+    {
+        foreach (var window in _windows)
+        {
+            try { window.Close(); } catch { }
+        }
+    }
+
     [StaFact]
     public void ChangeFileFormat_MarkdownToTxt_UpdatesConfig()
     {
         // Arrange
         var config = CreateDefaultConfig();
         config.FileFormat = ".md";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.FileFormatTxt.IsChecked = true;
@@ -46,7 +63,7 @@ public class FileFormatChangeTests
         // Arrange
         var config = CreateDefaultConfig();
         config.FileFormat = ".txt";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.FileFormatMarkdown.IsChecked = true;
@@ -66,7 +83,7 @@ public class FileFormatChangeTests
         config.Language = "de"; // Keep language same
         config.DataRoot = "C:\\Test\\Data"; // Keep data root same
         config.Hotkey = new HotkeyConfig { Modifiers = new List<string> { "Ctrl", "Shift" }, Key = "D" }; // Keep hotkey same
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act - Only change file format
         window.FileFormatTxt.IsChecked = true;
@@ -82,7 +99,7 @@ public class FileFormatChangeTests
         // Arrange
         var config = CreateDefaultConfig();
         config.FileFormat = ".md";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
         window.SaveButton.IsEnabled.Should().BeFalse("initially disabled");
 
         // Act
@@ -98,7 +115,7 @@ public class FileFormatChangeTests
         // Arrange
         var config = CreateDefaultConfig();
         config.FileFormat = ".md";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
         window.FileFormatMarkdown.IsChecked.Should().BeTrue("initially Markdown");
 
         // Act
@@ -117,7 +134,7 @@ public class FileFormatChangeTests
         config.FileFormat = ".md";
 
         // Act
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Assert
         window.FileFormatMarkdown.IsChecked.Should().BeTrue();
@@ -132,7 +149,7 @@ public class FileFormatChangeTests
         config.FileFormat = ".txt";
 
         // Act
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Assert
         window.FileFormatTxt.IsChecked.Should().BeTrue();

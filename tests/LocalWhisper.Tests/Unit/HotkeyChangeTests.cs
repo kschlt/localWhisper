@@ -13,8 +13,9 @@ namespace LocalWhisper.Tests.Unit;
 /// See: docs/iterations/iteration-06-settings.md (HotkeyChangeTests section)
 /// See: docs/ui/settings-window-specification.md (Hotkey Section)
 /// </remarks>
-public class HotkeyChangeTests
+public class HotkeyChangeTests : IDisposable
 {
+    private readonly List<System.Windows.Window> _windows = new();
     public HotkeyChangeTests()
     {
         // Initialize AppLogger with Error level to reduce test output verbosity
@@ -23,12 +24,20 @@ public class HotkeyChangeTests
         LocalWhisper.Core.AppLogger.Initialize(testDir, Serilog.Events.LogEventLevel.Error);
     }
 
+    
+    private SettingsWindow CreateWindow(AppConfig config, string configPath = "C:\\Test\\config.toml")
+    {
+        var window = new SettingsWindow(config, configPath);
+        _windows.Add(window);
+        return window;
+    }
+
     [StaFact]
     public void ChangeHotkey_Valid_UpdatesField()
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.SetHotkey("Ctrl", "Alt", "D");
@@ -44,7 +53,7 @@ public class HotkeyChangeTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act - Simulate hotkey conflict (e.g., Ctrl+Alt+Del is system hotkey)
         window.SetHotkey("Ctrl", "Alt", "Del");
@@ -62,7 +71,7 @@ public class HotkeyChangeTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act - Try to set hotkey without modifier
         window.SetHotkey(null, null, "D");
@@ -79,7 +88,7 @@ public class HotkeyChangeTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
         window.SetHotkey("Ctrl", "Alt", "V");
 
         // Act
@@ -96,7 +105,7 @@ public class HotkeyChangeTests
         var config = CreateDefaultConfig();
         config.Hotkey.Modifiers = new List<string> { "Ctrl", "Shift" };
         config.Hotkey.Key = "D";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.SetHotkey("Ctrl", "Alt", "D");
@@ -114,7 +123,7 @@ public class HotkeyChangeTests
         var config = CreateDefaultConfig();
         config.Hotkey.Modifiers = new List<string> { "Ctrl", "Shift", "Alt" };
         config.Hotkey.Key = "F12";
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act & Assert
         window.HotkeyTextBox.Text.Should().Be("Ctrl+Shift+Alt+F12");
@@ -129,7 +138,7 @@ public class HotkeyChangeTests
     {
         // Arrange
         var config = CreateDefaultConfig();
-        var window = new SettingsWindow(config, "C:\\Test\\config.toml");
+        var window = CreateWindow(config);
 
         // Act
         window.EnterHotkeyCaptureMode();
