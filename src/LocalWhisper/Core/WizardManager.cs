@@ -53,15 +53,31 @@ public class WizardManager
         // Ensure models directory exists
         Directory.CreateDirectory(modelsDir);
 
-        // Copy file
-        File.Copy(sourceFilePath, destFilePath, overwrite: true);
+        // Get full paths for comparison
+        var fullSourcePath = Path.GetFullPath(sourceFilePath);
+        var fullDestPath = Path.GetFullPath(destFilePath);
 
-        AppLogger.LogInformation("Model file copied", new
+        // Only copy if source and destination are different
+        // (User may have already moved the file manually)
+        if (!string.Equals(fullSourcePath, fullDestPath, StringComparison.OrdinalIgnoreCase))
         {
-            Source = sourceFilePath,
-            Destination = destFilePath,
-            Model = model.Name
-        });
+            File.Copy(sourceFilePath, destFilePath, overwrite: true);
+
+            AppLogger.LogInformation("Model file copied", new
+            {
+                Source = sourceFilePath,
+                Destination = destFilePath,
+                Model = model.Name
+            });
+        }
+        else
+        {
+            AppLogger.LogInformation("Model file already in correct location, skipping copy", new
+            {
+                Path = destFilePath,
+                Model = model.Name
+            });
+        }
 
         return destFilePath;
     }
@@ -113,13 +129,26 @@ public class WizardManager
         }
 
         Directory.CreateDirectory(modelsDir);
-        File.Copy(fullSourcePath, destModelPath, overwrite: true);
 
-        AppLogger.LogInformation("Model file copied to data root", new
+        // Only copy if source and destination are different
+        // (User may have already moved the file manually)
+        if (!string.Equals(fullSourcePath, destModelPath, StringComparison.OrdinalIgnoreCase))
         {
-            Source = sourceModelFilePath,
-            Destination = destModelPath
-        });
+            File.Copy(fullSourcePath, destModelPath, overwrite: true);
+
+            AppLogger.LogInformation("Model file copied to data root", new
+            {
+                Source = sourceModelFilePath,
+                Destination = destModelPath
+            });
+        }
+        else
+        {
+            AppLogger.LogInformation("Model file already in correct location, skipping copy", new
+            {
+                Path = destModelPath
+            });
+        }
 
         // Convert ModifierKeys to list of strings
         var modifiers = new System.Collections.Generic.List<string>();
