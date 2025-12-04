@@ -35,9 +35,33 @@ public class SettingsWindowTests : IDisposable
 
     public void Dispose()
     {
+        // Close all windows and shut down their Dispatchers
+        var dispatchersToShutdown = new HashSet<System.Windows.Threading.Dispatcher>();
+        
         foreach (var window in _windows)
         {
-            try { window.Close(); } catch { }
+            try 
+            { 
+                if (window.Dispatcher != null && !window.Dispatcher.HasShutdownStarted)
+                {
+                    dispatchersToShutdown.Add(window.Dispatcher);
+                    window.Close();
+                }
+            } 
+            catch { }
+        }
+        
+        // Force shutdown all Dispatchers to prevent message delivery after thread death
+        foreach (var dispatcher in dispatchersToShutdown)
+        {
+            try
+            {
+                if (!dispatcher.HasShutdownStarted)
+                {
+                    dispatcher.InvokeShutdown();
+                }
+            }
+            catch { }
         }
     }
 

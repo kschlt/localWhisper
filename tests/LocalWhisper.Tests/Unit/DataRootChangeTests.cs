@@ -52,13 +52,34 @@ public class DataRootChangeTests : IDisposable
 
     public void Dispose()
     {
-        // Close all windows
+        // Close all windows and shut down their Dispatchers
+        var dispatchersToShutdown = new HashSet<System.Windows.Threading.Dispatcher>();
+        
         foreach (var window in _windows)
         {
-            try { window.Close(); } catch { /* Ignore errors during cleanup */ }
+            try 
+            { 
+                if (window.Dispatcher != null && !window.Dispatcher.HasShutdownStarted)
+                {
+                    dispatchersToShutdown.Add(window.Dispatcher);
+                    window.Close();
+                }
+            } 
+            catch { }
         }
-
-        // Cleanup directories
+        
+        // Force shutdown all Dispatchers to prevent message delivery after thread death
+        foreach (var dispatcher in dispatchersToShutdown)
+        {
+            try
+            {
+                if (!dispatcher.HasShutdownStarted)
+                {
+                    dispatcher.InvokeShutdown();
+                }
+            }
+            catch { }
+        }
         if (Directory.Exists(_validTestDataRoot))
             Directory.Delete(_validTestDataRoot, recursive: true);
         if (Directory.Exists(_invalidTestDataRoot))
