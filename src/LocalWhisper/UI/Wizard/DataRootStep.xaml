@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Background="White">
 
-    <StackPanel Margin="40,30">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="40,30">
         <TextBlock Text="Speicherort wählen"
                   FontSize="16"
                   FontWeight="SemiBold"
@@ -55,5 +56,6 @@
                 </TextBlock>
             </StackPanel>
         </Border>
-    </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>
