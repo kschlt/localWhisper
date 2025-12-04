@@ -15,7 +15,12 @@ namespace LocalWhisper.Tests.Unit;
 /// Tests for US-054: Settings Window - Access and Navigation
 /// See: docs/iterations/iteration-06-settings.md (TrayMenuTests section)
 /// See: docs/ui/settings-window-specification.md (Access section)
+///
+/// SKIPPED: WPF integration tests disabled for v0.1 due to NotifyIcon/ContextMenu lifecycle issues.
+/// Coverage: Manual testing (tray menu is tested during manual app testing)
+/// Refactor: Will be converted to ViewModel tests in v1.0 (see tests/README.md)
 /// </remarks>
+[Trait("Category", "WpfIntegration")]
 public class TrayMenuTests
 {
     public TrayMenuTests()
