@@ -198,11 +198,12 @@ public class WizardManager
         // Validate
         config.Hotkey.Validate();
         config.Whisper.Validate();
-        // Note: PostProcessing validation skipped if disabled (paths can be empty)
+        // Note: PostProcessing validation skipped during wizard (paths configured later in Settings)
+        // The PostProcessing.Validate() requires paths when Enabled=true, but wizard doesn't collect them
 
-        // Save
+        // Save (skip PostProcessing validation - paths will be configured later in Settings)
         var configPath = PathHelpers.GetConfigPath(dataRoot);
-        ConfigManager.Save(configPath, config);
+        ConfigManager.Save(configPath, config, skipPostProcessingValidation: true);
 
         AppLogger.LogInformation("Initial config created", new
         {
