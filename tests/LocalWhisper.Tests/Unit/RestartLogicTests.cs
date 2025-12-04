@@ -211,12 +211,25 @@ public class RestartLogicTests
         var config = CreateDefaultConfig();
         var window = new SettingsWindow(config, "C:\\Test\\config.toml");
 
-        // Act
-        window.SetModelPath("C:\\New\\Path\\model.bin");
-        var requiresRestart = window.RequiresRestart();
+        // Create temporary model file
+        var tempModelPath = Path.Combine(Path.GetTempPath(), $"test-model-{Guid.NewGuid()}.bin");
+        File.WriteAllText(tempModelPath, "test model");
 
-        // Assert
-        requiresRestart.Should().BeFalse();
+        try
+        {
+            // Act - Use synchronous helper to avoid MessageBox hang
+            window.SetModelPathSync(tempModelPath);
+            var requiresRestart = window.RequiresRestart();
+
+            // Assert
+            requiresRestart.Should().BeFalse();
+        }
+        finally
+        {
+            // Cleanup
+            if (File.Exists(tempModelPath))
+                File.Delete(tempModelPath);
+        }
     }
 
     // Helper Methods
