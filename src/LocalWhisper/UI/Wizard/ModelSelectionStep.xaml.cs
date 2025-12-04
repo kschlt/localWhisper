@@ -36,9 +36,12 @@ public partial class ModelSelectionStep : UserControl
 
     public ModelSelectionStep()
     {
+        // Initialize data BEFORE InitializeComponent() to prevent null reference
+        // when XAML sets SelectedIndex="0" and triggers SelectionChanged
+        _allModels = ModelDefinition.GetAvailableModels();
+
         InitializeComponent();
 
-        _allModels = ModelDefinition.GetAvailableModels();
         LoadModelsForLanguage(_selectedLanguage);
     }
 
