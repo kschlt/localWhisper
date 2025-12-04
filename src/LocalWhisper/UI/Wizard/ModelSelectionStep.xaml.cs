@@ -31,6 +31,7 @@ public partial class ModelSelectionStep : UserControl
     private string? _modelFilePath;
     private string _selectedLanguage = "de"; // Default: German
     private readonly ModelValidator _validator = new();
+    private bool _isInitialized = false; // Guard flag to prevent event handlers during construction
 
     public event EventHandler? ModelChanged;
 
@@ -43,10 +44,16 @@ public partial class ModelSelectionStep : UserControl
         InitializeComponent();
 
         LoadModelsForLanguage(_selectedLanguage);
+
+        _isInitialized = true; // Mark as fully initialized
     }
 
     private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        // Guard: Don't run during InitializeComponent() when controls are still being created
+        if (!_isInitialized)
+            return;
+
         if (LanguageComboBox.SelectedItem is not ComboBoxItem selectedItem)
             return;
 
@@ -97,6 +104,10 @@ public partial class ModelSelectionStep : UserControl
 
     private void ModelGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        // Guard: Don't run during InitializeComponent() when controls are still being created
+        if (!_isInitialized)
+            return;
+
         if (ModelGrid.SelectedItem is not ModelDefinition model)
         {
             BrowseModelButton.IsEnabled = false;
