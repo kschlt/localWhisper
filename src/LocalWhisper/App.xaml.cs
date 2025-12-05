@@ -259,11 +259,16 @@ public partial class App : Application
     /// </summary>
     private void WireHotkeyEvents()
     {
-        // Use synchronous handler that fires and forgets async work
+        // Handle hotkey press (start recording)
         _hotkeyManager!.HotkeyPressed += (s, e) =>
         {
-            // Fire and forget with proper error handling
             _ = HandleHotkeyPressAsync();
+        };
+
+        // Handle hotkey release (stop recording)
+        _hotkeyManager!.HotkeyReleased += (s, e) =>
+        {
+            _ = HandleHotkeyReleaseAsync();
         };
     }
 
@@ -299,13 +304,50 @@ public partial class App : Application
             var tmpPath = PathHelpers.GetTmpPath(_dataRoot!);
             _audioRecorder.StartRecording(tmpPath);
 
-            // For Iteration 2: Record for fixed duration (3000ms for testing)
-            // TODO(Iter-3): Implement proper hold-to-talk with key-up detection
-            await Task.Delay(3000);
+            // Recording will continue until HandleHotkeyReleaseAsync is called
+        }
+        catch (Exception ex)
+        {
+            AppLogger.LogError("Error starting recording", ex);
+
+            // Ensure we return to idle state
+            if (_stateMachine!.State != AppState.Idle)
+            {
+                _stateMachine.TransitionTo(AppState.Idle);
+            }
+
+            // Show error dialog
+            Dispatcher.Invoke(() =>
+            {
+                var errorDialog = new ErrorDialog(
+                    title: "Aufnahmefehler",
+                    message: $"Fehler beim Starten der Audioaufnahme:\n\n{ex.Message}",
+                    iconType: ErrorIconType.Error
+                );
+                errorDialog.ShowDialog();
+            });
+        }
+        finally
+        {
+            _recordingSemaphore.Release();
+        }
+    }
+
+    /// <summary>
+    /// Handle hotkey release asynchronously - stop recording and process.
+    /// </summary>
+    private async Task HandleHotkeyReleaseAsync()
+    {
+        try
+        {
+            if (_stateMachine!.State != AppState.Recording)
+            {
+                return; // Ignore release if not currently recording
+            }
 
             // Stop recording: Recording -> Processing
             _stateMachine.TransitionTo(AppState.Processing);
-            var wavFilePath = await _audioRecorder.StopRecordingAsync();
+            var wavFilePath = await _audioRecorder!.StopRecordingAsync();
 
             // Validate WAV file (US-011)
             if (!WavValidator.ValidateWavFile(wavFilePath, out var errorMessage))
