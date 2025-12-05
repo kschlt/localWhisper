@@ -193,6 +193,14 @@ public partial class App : Application
             WireHotkeyEvents();
 
             AppLogger.LogInformation("Application initialization complete");
+
+            // 9. Keep app alive - log heartbeat every 60 seconds to verify app is running
+            var heartbeatTimer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(60)
+            };
+            heartbeatTimer.Tick += (s, args) => AppLogger.LogDebug("Heartbeat - app still running");
+            heartbeatTimer.Start();
         }
         catch (Exception ex)
         {

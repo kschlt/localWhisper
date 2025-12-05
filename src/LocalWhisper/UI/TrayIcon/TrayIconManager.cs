@@ -61,18 +61,38 @@ public class TrayIconManager : IDisposable
         _hiddenWindow.Show();
 
         // Create tray icon
-        _trayIcon = new TaskbarIcon
+        try
         {
-            Icon = CreateIcon(AppState.Idle),
-            ToolTipText = IconResources.GetStateTooltip(AppState.Idle, "de"),
-            ContextMenu = CreateContextMenu(),
-            Visibility = Visibility.Visible // Make tray icon visible
-        };
+            AppLogger.LogDebug("Creating tray icon...");
+            var icon = CreateIcon(AppState.Idle);
+            AppLogger.LogDebug("Icon created successfully");
 
-        // Subscribe to state changes
-        _stateMachine.StateChanged += OnStateChanged;
+            var tooltip = IconResources.GetStateTooltip(AppState.Idle, "de");
+            AppLogger.LogDebug($"Tooltip created: {tooltip}");
 
-        AppLogger.LogInformation("Tray icon initialized");
+            var contextMenu = CreateContextMenu();
+            AppLogger.LogDebug("Context menu created");
+
+            _trayIcon = new TaskbarIcon
+            {
+                Icon = icon,
+                ToolTipText = tooltip,
+                ContextMenu = contextMenu,
+                Visibility = Visibility.Visible // Make tray icon visible
+            };
+
+            AppLogger.LogDebug($"TaskbarIcon created, Visibility={_trayIcon.Visibility}");
+
+            // Subscribe to state changes
+            _stateMachine.StateChanged += OnStateChanged;
+
+            AppLogger.LogInformation("Tray icon initialized successfully");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.LogError("Failed to create tray icon", ex);
+            throw;
+        }
     }
 
     /// <summary>
