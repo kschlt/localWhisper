@@ -444,8 +444,8 @@ public partial class SettingsWindow : Window
                 else
                 {
                     ModelStatusText.Text = "⚠ Modell ungültig (Hash-Prüfung fehlgeschlagen)";
-                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
-                    _hasModelError = true;
+                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Orange;
+                    _hasModelError = false; // Warning only, don't block save (model may be manually copied)
                     AppLogger.LogWarning("Model hash validation failed", new { ModelPath = _currentModelPath, Message = message });
                 }
             };
