@@ -37,6 +37,11 @@ public partial class App : Application
     /// </summary>
     private void OnStartup(object sender, StartupEventArgs e)
     {
+        // Add global exception handlers
+        AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
+        DispatcherUnhandledException += OnDispatcherUnhandledException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
+
         try
         {
             // 1. Determine default data root
@@ -591,6 +596,38 @@ public partial class App : Application
         {
             _recordingSemaphore.Release();
         }
+    }
+
+    /// <summary>
+    /// Handle unhandled exceptions from non-UI threads.
+    /// </summary>
+    private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        var exception = e.ExceptionObject as Exception;
+        AppLogger.LogError("Unhandled exception", exception);
+
+        if (e.IsTerminating)
+        {
+            AppLogger.LogError("Application is terminating due to unhandled exception");
+        }
+    }
+
+    /// <summary>
+    /// Handle unhandled exceptions from UI thread.
+    /// </summary>
+    private void OnDispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    {
+        AppLogger.LogError("Dispatcher unhandled exception", e.Exception);
+        e.Handled = true; // Prevent app crash
+    }
+
+    /// <summary>
+    /// Handle unobserved task exceptions.
+    /// </summary>
+    private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        AppLogger.LogError("Unobserved task exception", e.Exception);
+        e.SetObserved(); // Prevent app crash
     }
 
     /// <summary>
