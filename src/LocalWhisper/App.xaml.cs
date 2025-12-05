@@ -216,7 +216,12 @@ public partial class App : Application
         if (!success)
         {
             // Hotkey conflict detected (US-003)
-            ShowHotkeyConflictDialog();
+            // Log warning but don't show blocking dialog on startup (disruptive UX)
+            // User can change hotkey in Settings if needed
+            AppLogger.LogWarning("Hotkey registration failed - app will run without hotkey. Change hotkey in Settings.", new
+            {
+                ConfiguredHotkey = string.Join("+", _config!.Hotkey.Modifiers) + "+" + _config.Hotkey.Key
+            });
         }
     }
 
