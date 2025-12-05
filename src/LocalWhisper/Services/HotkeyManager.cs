@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using LocalWhisper.Core;
 using LocalWhisper.Models;
