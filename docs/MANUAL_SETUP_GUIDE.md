@@ -203,6 +203,34 @@ max_tokens = 512
 - If you don't want post-processing, set `postprocessing.enabled = false` in config.toml
 - If you do want it, ensure `llm_cli_path` and `model_path` are correctly set
 
+### Error: Post-processing fails with exit code -1073741515
+This error indicates missing DLL files required by llama-cli.exe.
+
+**For CUDA version** (llama-cli with GPU support):
+You need ALL the following DLLs in the `bin/` folder alongside llama-cli.exe:
+- `cudart64_*.dll` (CUDA Runtime - e.g., cudart64_12.dll)
+- `cublas64_*.dll` (CUDA BLAS - e.g., cublas64_12.dll)
+- `cublasLt64_*.dll` (CUDA BLAS LT - e.g., cublasLt64_12.dll)
+- All `ggml*.dll` files (ggml-base.dll, ggml-cpu.dll, ggml-cuda.dll, etc.)
+
+**Where to get CUDA DLLs:**
+1. Download the same llama.cpp release that contains llama-cli.exe
+2. The release archive includes all required CUDA DLLs
+3. Copy ALL DLL files from the llama.cpp archive to your `bin/` folder
+
+**Alternative - Use CPU-only version:**
+If you don't have an NVIDIA GPU or want to avoid CUDA dependencies:
+1. Download the CPU-only llama-cli build instead
+2. It only requires the ggml DLLs (no CUDA DLLs needed)
+3. Performance will be slower but no GPU required
+
+**Workaround:**
+Disable post-processing in config.toml:
+```toml
+[postprocessing]
+enabled = false
+```
+
 ### Hotkey conflict warning on startup
 - The configured hotkey is already in use by another application
 - Go to Settings (right-click tray icon → "Einstellungen")
