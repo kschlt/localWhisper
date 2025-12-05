@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace LocalWhisper.Models;
@@ -79,4 +80,63 @@ public class STTSegment
     /// </summary>
     [JsonPropertyName("text")]
     public string Text { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Wrapper for actual whisper-cli JSON output format with -oj flag.
+/// </summary>
+/// <remarks>
+/// Actual whisper-cli with -oj produces this structure:
+/// {
+///   "result": { "language": "de" },
+///   "transcription": [ { "text": "...", "timestamps": {...}, "offsets": {...} } ]
+/// }
+/// </remarks>
+internal class WhisperCliJsonOutput
+{
+    [JsonPropertyName("result")]
+    public WhisperResult? Result { get; set; }
+
+    [JsonPropertyName("transcription")]
+    public List<WhisperTranscriptionSegment>? Transcription { get; set; }
+
+    /// <summary>
+    /// Convert to STTResult by concatenating all transcription segments.
+    /// </summary>
+    public STTResult ToSTTResult()
+    {
+        var text = string.Empty;
+        var language = Result?.Language ?? string.Empty;
+
+        if (Transcription != null && Transcription.Count > 0)
+        {
+            // Concatenate all segment texts
+            text = string.Join("", Transcription.Select(t => t.Text ?? string.Empty));
+        }
+
+        return new STTResult
+        {
+            Text = text.Trim(),
+            Language = language,
+            DurationSeconds = 0 // Not provided in this format
+        };
+    }
+}
+
+internal class WhisperResult
+{
+    [JsonPropertyName("language")]
+    public string? Language { get; set; }
+}
+
+internal class WhisperTranscriptionSegment
+{
+    [JsonPropertyName("text")]
+    public string? Text { get; set; }
+
+    [JsonPropertyName("timestamps")]
+    public Dictionary<string, string>? Timestamps { get; set; }
+
+    [JsonPropertyName("offsets")]
+    public Dictionary<string, int>? Offsets { get; set; }
 }
