@@ -65,7 +65,8 @@ public class TrayIconManager : IDisposable
         {
             Icon = CreateIcon(AppState.Idle),
             ToolTipText = IconResources.GetStateTooltip(AppState.Idle, "de"),
-            ContextMenu = CreateContextMenu()
+            ContextMenu = CreateContextMenu(),
+            Visibility = Visibility.Visible // Make tray icon visible
         };
 
         // Subscribe to state changes
