@@ -299,9 +299,9 @@ public partial class App : Application
             var tmpPath = PathHelpers.GetTmpPath(_dataRoot!);
             _audioRecorder.StartRecording(tmpPath);
 
-            // For Iteration 2: Record for fixed duration (500ms)
+            // For Iteration 2: Record for fixed duration (3000ms for testing)
             // TODO(Iter-3): Implement proper hold-to-talk with key-up detection
-            await Task.Delay(500);
+            await Task.Delay(3000);
 
             // Stop recording: Recording -> Processing
             _stateMachine.TransitionTo(AppState.Processing);
