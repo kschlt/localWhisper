@@ -405,13 +405,15 @@ public partial class SettingsWindow : Window
 
         try
         {
-            // SHA-1 hash verification (US-058)
-            var progress = new Progress<double>(_ => { });
-
-            // Compute SHA-1 hash (runs in background thread) with 10-second timeout
+            // Quick validation: Check file existence and size only
+            // Note: We don't have expected hash for manually copied models,
+            // so we can't do full SHA-1 verification. Just verify file exists and is reasonable size.
             var validationTask = Task.Run(() =>
-                _modelValidator.ValidateModel(_currentModelPath, "", progress)
-            );
+            {
+                bool isValid = _modelValidator.QuickValidate(_currentModelPath);
+                string message = isValid ? "File exists and has valid size" : "File not found or too small";
+                return (isValid, message);
+            });
 
             var timeoutTask = Task.Delay(TimeSpan.FromSeconds(10));
             var completedTask = await Task.WhenAny(validationTask, timeoutTask);
@@ -429,24 +431,17 @@ public partial class SettingsWindow : Window
             {
                 if (isValid)
                 {
-                    ModelStatusText.Text = "✓ Modell OK";
+                    ModelStatusText.Text = "✓ Modell OK (Datei vorhanden)";
                     ModelStatusText.Foreground = System.Windows.Media.Brushes.Green;
                     _hasModelError = false;
-                    AppLogger.LogInformation("Model verification successful (SHA-1 computed)", new { ModelPath = _currentModelPath });
-                }
-                else if (!File.Exists(_currentModelPath))
-                {
-                    ModelStatusText.Text = "⚠ Modell nicht gefunden oder beschädigt";
-                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
-                    _hasModelError = false;
-                    AppLogger.LogWarning("Model verification failed", new { ModelPath = _currentModelPath, Message = message });
+                    AppLogger.LogInformation("Model verification successful (file exists and has valid size)", new { ModelPath = _currentModelPath });
                 }
                 else
                 {
-                    ModelStatusText.Text = "⚠ Modell ungültig (Hash-Prüfung fehlgeschlagen)";
-                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Orange;
-                    _hasModelError = false; // Warning only, don't block save (model may be manually copied)
-                    AppLogger.LogWarning("Model hash validation failed", new { ModelPath = _currentModelPath, Message = message });
+                    ModelStatusText.Text = "⚠ Modell nicht gefunden oder zu klein";
+                    ModelStatusText.Foreground = System.Windows.Media.Brushes.Red;
+                    _hasModelError = true; // Block save if file doesn't exist or is too small
+                    AppLogger.LogWarning("Model verification failed", new { ModelPath = _currentModelPath, Message = message });
                 }
             };
 
