@@ -63,15 +63,15 @@ public class TrayIconManager : IDisposable
         // Create tray icon
         try
         {
-            AppLogger.LogDebug("Creating tray icon...");
+            AppLogger.LogInformation("Creating tray icon...");
             var icon = CreateIcon(AppState.Idle);
-            AppLogger.LogDebug("Icon created successfully");
+            AppLogger.LogInformation("Icon created successfully");
 
             var tooltip = IconResources.GetStateTooltip(AppState.Idle, "de");
-            AppLogger.LogDebug($"Tooltip created: {tooltip}");
+            AppLogger.LogInformation($"Tooltip created: {tooltip}");
 
             var contextMenu = CreateContextMenu();
-            AppLogger.LogDebug("Context menu created");
+            AppLogger.LogInformation("Context menu created");
 
             _trayIcon = new TaskbarIcon
             {
@@ -81,7 +81,7 @@ public class TrayIconManager : IDisposable
                 Visibility = Visibility.Visible // Make tray icon visible
             };
 
-            AppLogger.LogDebug($"TaskbarIcon created, Visibility={_trayIcon.Visibility}");
+            AppLogger.LogInformation($"TaskbarIcon created, Visibility={_trayIcon.Visibility}");
 
             // Subscribe to state changes
             _stateMachine.StateChanged += OnStateChanged;
