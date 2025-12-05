@@ -113,13 +113,15 @@ public class WhisperCLIAdapter
         // Language
         args.Append($"--language {_config.Language} ");
 
-        // Output format
-        args.Append("--output-format json ");
+        // Output JSON format
+        args.Append("-oj ");
 
         // Output file (if specified)
+        // Note: -of expects path WITHOUT extension, whisper-cli adds .json automatically
         if (!string.IsNullOrEmpty(outputJsonPath))
         {
-            args.Append($"--output-file \"{outputJsonPath}\" ");
+            var outputPathWithoutExtension = Path.ChangeExtension(outputJsonPath, null);
+            args.Append($"-of \"{outputPathWithoutExtension}\" ");
         }
 
         // Input WAV file
