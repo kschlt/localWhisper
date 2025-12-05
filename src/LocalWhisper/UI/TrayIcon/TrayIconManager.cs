@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -21,6 +22,10 @@ namespace LocalWhisper.UI.TrayIcon;
 /// </remarks>
 public class TrayIconManager : IDisposable
 {
+    // Import DestroyIcon for proper GDI handle cleanup
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool DestroyIcon(IntPtr hIcon);
+
     private readonly TaskbarIcon _trayIcon;
     private readonly StateMachine _stateMachine;
     private readonly Window _hiddenWindow;
@@ -82,6 +87,11 @@ public class TrayIconManager : IDisposable
             };
 
             AppLogger.LogInformation($"TaskbarIcon created, Visibility={_trayIcon.Visibility}");
+
+            // Force immediate creation of the tray icon
+            // This ensures the icon appears immediately without waiting for WPF message pump
+            _trayIcon.ForceCreate(enablesEfficiencyMode: false);
+            AppLogger.LogInformation("TaskbarIcon.ForceCreate() called");
 
             // Subscribe to state changes
             _stateMachine.StateChanged += OnStateChanged;
@@ -158,7 +168,7 @@ public class TrayIconManager : IDisposable
         var bitmap = new RenderTargetBitmap(32, 32, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(visual);
 
-        // Convert to System.Drawing.Icon
+        // Convert to System.Drawing.Icon with proper GDI handle cleanup
         using var stream = new System.IO.MemoryStream();
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));
@@ -166,7 +176,27 @@ public class TrayIconManager : IDisposable
         stream.Seek(0, System.IO.SeekOrigin.Begin);
 
         using var bmp = new System.Drawing.Bitmap(stream);
-        return System.Drawing.Icon.FromHandle(bmp.GetHicon());
+
+        // Get icon handle from bitmap
+        IntPtr iconHandle = bmp.GetHicon();
+
+        try
+        {
+            // Create icon from handle
+            using var tempIcon = System.Drawing.Icon.FromHandle(iconHandle);
+
+            // Clone icon to create independent copy
+            // This ensures the icon persists after we destroy the handle
+            var clonedIcon = (System.Drawing.Icon)tempIcon.Clone();
+
+            return clonedIcon;
+        }
+        finally
+        {
+            // Always destroy GDI handle to prevent memory leak
+            // This is critical - Icon.FromHandle() doesn't manage the handle lifecycle
+            DestroyIcon(iconHandle);
+        }
     }
 
     /// <summary>
