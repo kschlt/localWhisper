@@ -68,15 +68,9 @@ public class TrayIconManager : IDisposable
         // Create tray icon
         try
         {
-            AppLogger.LogInformation("Creating tray icon...");
             var icon = CreateIcon(AppState.Idle);
-            AppLogger.LogInformation("Icon created successfully");
-
             var tooltip = IconResources.GetStateTooltip(AppState.Idle, "de");
-            AppLogger.LogInformation($"Tooltip created: {tooltip}");
-
             var contextMenu = CreateContextMenu();
-            AppLogger.LogInformation("Context menu created");
 
             _trayIcon = new TaskbarIcon
             {
@@ -86,17 +80,14 @@ public class TrayIconManager : IDisposable
                 Visibility = Visibility.Visible // Make tray icon visible
             };
 
-            AppLogger.LogInformation($"TaskbarIcon created, Visibility={_trayIcon.Visibility}");
-
-            // Force immediate creation of the tray icon
-            // This ensures the icon appears immediately without waiting for WPF message pump
+            // Force immediate creation of the tray icon; without this the icon
+            // was not shown reliably (observed in manual testing, Dec 2025).
             _trayIcon.ForceCreate(enablesEfficiencyMode: false);
-            AppLogger.LogInformation("TaskbarIcon.ForceCreate() called");
 
             // Subscribe to state changes
             _stateMachine.StateChanged += OnStateChanged;
 
-            AppLogger.LogInformation("Tray icon initialized successfully");
+            AppLogger.LogInformation("Tray icon initialized");
         }
         catch (Exception ex)
         {
