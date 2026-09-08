@@ -1,0 +1,58 @@
+name: Release
+
+# Pushing a tag like v0.1.0-pre.1 builds the portable EXE and publishes a GitHub
+# release. Tags containing a hyphen (pre.1, rc.1, beta) are marked as pre-release.
+#
+#   git tag v0.1.0-pre.1
+#   git push origin v0.1.0-pre.1
+
+on:
+  push:
+    tags: [ 'v*' ]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore LocalWhisper.sln
+
+    - name: Build solution
+      run: dotnet build LocalWhisper.sln --configuration Release --no-restore
+
+    - name: Run unit tests
+      run: dotnet test LocalWhisper.sln --configuration Release --no-build --filter "Category!=WpfIntegration"
+
+    - name: Publish portable EXE (win-x64)
+      run: dotnet publish src/LocalWhisper/LocalWhisper.csproj --configuration Release --runtime win-x64 --self-contained true --output publish/win-x64
+
+    - name: Package
+      shell: pwsh
+      run: |
+        $version = "${{ github.ref_name }}"
+        New-Item -ItemType Directory -Force -Path dist | Out-Null
+        Copy-Item publish/win-x64/LocalWhisper.exe dist/
+        Copy-Item docs/MANUAL_SETUP_GUIDE.md dist/SETUP.md
+        Compress-Archive -Path dist/* -DestinationPath "LocalWhisper-$version-win-x64.zip"
+        Get-FileHash "LocalWhisper-$version-win-x64.zip" -Algorithm SHA256 | ForEach-Object { "$($_.Hash)  LocalWhisper-$version-win-x64.zip" } | Out-File "LocalWhisper-$version-win-x64.zip.sha256" -Encoding ascii
+
+    - name: Create GitHub release
+      uses: softprops/action-gh-release@v2
+      with:
+        prerelease: ${{ contains(github.ref_name, '-') }}
+        generate_release_notes: true
+        files: |
+          LocalWhisper-${{ github.ref_name }}-win-x64.zip
+          LocalWhisper-${{ github.ref_name }}-win-x64.zip.sha256

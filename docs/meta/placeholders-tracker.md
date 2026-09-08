@@ -22,10 +22,10 @@ A **placeholder** is a temporary implementation that satisfies immediate require
 
 | ID | Iteration Added | Component | Description | Resolution Iteration | Status |
 |----|----------------|-----------|-------------|---------------------|--------|
-| PH-001 | 1 | Settings Window Link | Error dialog shows "Settings coming in v0.2" instead of opening Settings | 6 | ⏳ Pending |
-| PH-002 | 1 | Processing State | Simulated 500ms delay instead of actual STT processing | 3 | ⏳ Pending |
-| PH-003 | 1 | Config Schema | Minimal config (hotkey only) instead of full schema | 5 | ⏳ Pending |
-| PH-004 | 1 | Data Root | Hardcoded `%LOCALAPPDATA%\LocalWhisper\` instead of user choice | 5 | ⏳ Pending |
+| PH-001 | 1 | Settings Window Link | Error dialog shows "Settings coming in v0.2" instead of opening Settings | 6 | ⏳ Pending (still a MessageBox in `ErrorDialog.OnSettingsButtonClick`, as of 2026-09) |
+| PH-002 | 1 | Processing State | Simulated 500ms delay instead of actual STT processing | 3 | ✅ Resolved (Iter 3; hold-to-talk key-up detection added 2025-12-05) |
+| PH-003 | 1 | Config Schema | Minimal config (hotkey only) instead of full schema | 5 | ✅ Resolved (full schema in `ConfigManager`) |
+| PH-004 | 1 | Data Root | Hardcoded `%LOCALAPPDATA%\LocalWhisper\` instead of user choice | 5 | ✅ Resolved (wizard `DataRootStep`; `PathHelpers.GetDataRoot()` is only the default) |
 
 **Legend:**
 - ⏳ **Pending** - Placeholder is active, waiting for resolution iteration

@@ -1,9 +1,9 @@
 # Product Summary
 
-**Product Name:** Dictate-to-Clipboard
-**Version:** v0.1 (Planned)
+**Product Name:** LocalWhisper (working name during specification: "Dictate-to-Clipboard")
+**Version:** v0.1 (pre-release builds via GitHub Releases)
 **Platform:** Windows Desktop (Portable)
-**Status:** Documentation Complete, Implementation Pending
+**Status:** Prototype implemented (iterations 1-7), not actively maintained since December 2025. See README.md.
 
 ---
 

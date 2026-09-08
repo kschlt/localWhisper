@@ -5,6 +5,11 @@ on:
     branches: [ main, 'claude/**' ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
@@ -25,6 +30,8 @@ jobs:
     - name: Build solution
       run: dotnet build LocalWhisper.sln --configuration Release --no-restore
 
+    # WPF window tests (Category=WpfIntegration) need an interactive desktop and are
+    # excluded on the hosted runner. See tests/LocalWhisper.Tests/README.md.
     - name: Run unit tests
       run: dotnet test LocalWhisper.sln --configuration Release --no-build --verbosity normal --filter "Category!=WpfIntegration" --logger "trx;LogFileName=test-results.trx"
 
@@ -34,3 +41,15 @@ jobs:
       with:
         name: test-results
         path: '**/TestResults/*.trx'
+
+    # Portable single-file build. This is the same artifact the release workflow ships,
+    # so every green CI run doubles as a smoke test that the app still publishes.
+    - name: Publish portable EXE (win-x64)
+      run: dotnet publish src/LocalWhisper/LocalWhisper.csproj --configuration Release --runtime win-x64 --self-contained true --output publish/win-x64
+
+    - name: Upload portable EXE
+      uses: actions/upload-artifact@v4
+      with:
+        name: LocalWhisper-win-x64-${{ github.sha }}
+        path: publish/win-x64/LocalWhisper.exe
+        retention-days: 14

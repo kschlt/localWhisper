@@ -1,257 +1,121 @@
-# Dictate-to-Clipboard
+# LocalWhisper
 
-**Status:** Documentation Complete, Implementation Pending
-**Version:** v0.1 (Planned)
-**Platform:** Windows Desktop (Portable)
+[![.NET Build and Test](https://github.com/kschlt/localWhisper/actions/workflows/dotnet-build-test.yml/badge.svg)](https://github.com/kschlt/localWhisper/actions/workflows/dotnet-build-test.yml)
 
----
+**Hold a hotkey, speak, release: the transcript is in your clipboard.**
+A small, portable Windows tray app for offline dictation, built on
+[whisper.cpp](https://github.com/ggerganov/whisper.cpp).
 
-## Quick Summary
-
-A portable Windows desktop app for fast offline speech-to-text dictation:
-
-**Hold hotkey → speak → release → transcript in clipboard**
-
-- ✅ Offline & private (local Whisper STT)
-- ✅ Portable (no admin rights, single EXE)
-- ✅ Searchable history (auto-saved Markdown files)
-- ✅ Zero friction (no UI switching)
+> **Project status: working prototype, not maintained.**
+> The app runs end-to-end (hotkey, recording, transcription, clipboard, history, flyout,
+> first-run wizard, settings, optional LLM post-processing). It was built and manually
+> tested in November/December 2025 and has not been developed since, because the author
+> no longer has a Windows machine. It is published as-is; see [Status](#status) for what
+> works, what is rough, and what was never done. Forks and PRs are welcome, but do not
+> expect fast responses.
 
 ---
 
-## Current State
+## What it does
 
-This repository contains **complete documentation** for the Dictate-to-Clipboard project:
+- **Zero-friction dictation:** press and hold the hotkey (default `Ctrl+Shift+A`), talk,
+  release. A short flyout confirms the result, and the text is already in your clipboard.
+- **Offline and private:** speech recognition runs locally via `whisper-cli.exe`.
+  No cloud, no account, no telemetry.
+- **Portable:** a single self-contained `LocalWhisper.exe`, no installer, no admin rights.
+  All data lives in one folder you choose (`%LOCALAPPDATA%\LocalWhisper` by default).
+- **History:** every dictation is saved as a timestamped Markdown file.
+- **Optional post-processing:** clean up punctuation and formatting with a local LLM
+  (`llama-cli.exe` from llama.cpp). Off by default.
 
-**✅ Documentation Complete:**
-- Product specification (use cases, requirements, data structures)
-- Solution architecture (components, flows, ADRs)
-- Implementation plan (8 iterations with user stories)
-- Test strategy (BDD seeds, acceptance criteria)
-- AI guidance (meta-docs for Claude Code sessions)
+The UI language is **German**. The code and documentation are in English.
 
-**⏳ Implementation:** Ready to begin (Iteration 1)
+## Who it is for
 
----
+People who dictate short texts many times a day (chat replies, notes, ticket comments)
+and want that to be one hotkey away, without sending audio anywhere.
+Realistically: it is also a portfolio piece showing a spec-driven, test-first way of
+building a small desktop app with an AI coding agent. See [How it was built](#how-it-was-built).
 
-## Documentation Structure
+## Getting it running
 
-```
-/docs/
-  /meta/               ← Start here! AI agent guidance
-    how-to-use-this-repo.md
-    claude-integration-guide.md
-    iteration-execution-guide.md
-    traceability-index.md
+There is no installer. You need three things on a Windows 10/11 x64 machine:
 
-  /overview/           ← Product summary & glossary
-    product-summary.md
-    glossary.md
+1. **LocalWhisper.exe**: download the latest pre-release from the
+   [Releases](https://github.com/kschlt/localWhisper/releases) page, or build it yourself
+   (see below) if none is listed. Windows SmartScreen will warn because the binary is
+   not code-signed.
+2. **whisper-cli.exe** and its DLLs from a
+   [whisper.cpp release](https://github.com/ggerganov/whisper.cpp/releases).
+3. **A Whisper model** (`ggml-small.bin` is a good start) from
+   [Hugging Face](https://huggingface.co/ggerganov/whisper.cpp/tree/main).
 
-  /specification/      ← Requirements (UC, FR, NFR)
-    use-cases.md
-    functional-requirements.md
-    non-functional-requirements.md
-    data-structures.md
-    traceability-matrix.md
+Then follow the step-by-step **[Manual Setup Guide](docs/MANUAL_SETUP_GUIDE.md)**.
+Note: after the first-run wizard you currently still have to enter the path to
+`whisper-cli.exe` in `config.toml` by hand. The guide shows exactly where.
 
-  /architecture/       ← System design & ADRs
-    architecture-overview.md
-    interface-contracts.md
-    runtime-flows.md
-    risk-register.md
+### Building from source
 
-  /adr/                ← Architecture decisions
-    0000-index.md
-    0001-platform-dotnet-wpf.md
-    0002-cli-subprocesses.md
-    0003-storage-layout.md
-    0004-autostart-removed.md
-    0005-custom-flyout.md
-
-  /iterations/         ← Implementation roadmap
-    iteration-plan.md
-    dependency-graph.yaml
-
-  /testing/            ← Test strategy & BDD seeds
-    test-strategy.md
-    bdd-feature-seeds.md
-
-  /changelog/          ← Version history
-    v0.1-planned.md
+```powershell
+git clone https://github.com/kschlt/localWhisper.git
+cd localWhisper
+dotnet build LocalWhisper.sln -c Release
+dotnet test  LocalWhisper.sln -c Release --filter "Category!=WpfIntegration"
+dotnet publish src/LocalWhisper/LocalWhisper.csproj -c Release -r win-x64 --self-contained -o publish
 ```
 
----
+Requires the .NET 8 SDK on Windows (WPF does not build on Linux/macOS).
+`publish/LocalWhisper.exe` is the portable binary. CI runs the same commands on every push
+and attaches the EXE as a workflow artifact.
 
-## Getting Started (For AI Agents)
+## Status
 
-**If you are a Claude Code session:**
+The project was planned as 8 iterations. Iterations 1 to 7 are implemented; iteration 8
+(stabilisation, reset function, performance verification) was never started.
 
-1. **Read:** `docs/meta/how-to-use-this-repo.md` (5 min orientation)
-2. **Load context:** See `docs/meta/claude-integration-guide.md`
-3. **Start implementing:** Begin with `docs/iterations/iteration-plan.md`
+| Area | State |
+|---|---|
+| Global hotkey, hold-to-talk with key-up detection | Works |
+| WASAPI recording to 16 kHz WAV | Works |
+| Transcription via `whisper-cli` (JSON output) | Works, corrected against real whisper.cpp output in Dec 2025 |
+| Clipboard, Markdown history, flyout notification | Works |
+| First-run wizard (data folder, model, hotkey) | Works, but does not ask for the whisper-cli path (manual `config.toml` edit) |
+| Model download and SHA-1 verification | Implemented, lightly tested |
+| Settings window | Works; the "Settings" button inside error dialogs is still a placeholder |
+| LLM post-processing via `llama-cli` | Implemented; needs the CUDA or CPU build of llama.cpp and its DLLs |
+| Reset / repair flow, p95 latency target of 2.5 s | Not verified (iteration 8) |
+| Automated tests | ~230 xUnit tests; ~70 WPF window tests are excluded on CI because they need an interactive desktop |
+| Code signing, auto-update, autostart, GPU acceleration for Whisper | Not planned for v0.1 |
 
-**Key principle:** All requirements are specified. Your job is to implement exactly what is documented, starting from Iteration 1.
+Known rough edges are listed in [docs/changelog/v0.1-planned.md](docs/changelog/v0.1-planned.md).
 
----
+## How it was built
 
-## Implementation Roadmap
+This repository is an experiment in **specification-first development with an AI coding
+agent** (Claude Code). The workflow was: write use cases, functional and non-functional
+requirements with IDs, architecture decision records and Gherkin scenarios first, then
+implement iteration by iteration with tests written before code. Almost all commits were
+authored by the agent in web sessions and reviewed by the owner; the branch names still
+carry the session IDs.
 
-| Iteration | Focus | Effort | Status |
-|-----------|-------|--------|--------|
-| 1 | Hotkey & App Skeleton | 4-6h | Planned |
-| 2 | Audio Recording | 4-6h | Planned |
-| 3 | STT with Whisper | 6-8h | Planned |
-| 4 | Clipboard + History + Flyout | 6-10h | Planned |
-| 5 | First-Run Wizard + Repair | 8-12h | Planned |
-| 6 | Settings UI | 4-6h | Planned |
-| 7 | Optional Post-Processing | 4-6h | Planned |
-| 8 | Stabilization + Reset | 6-10h | Planned |
+If you want to read the specification rather than the code:
 
-**Total:** ~40-60 hours
+- [Product summary](docs/overview/product-summary.md)
+- [Use cases](docs/specification/use-cases.md), [functional requirements](docs/specification/functional-requirements.md), [NFRs](docs/specification/non-functional-requirements.md)
+- [Architecture overview](docs/architecture/architecture-overview.md) and [ADR index](docs/adr/0000-index.md)
+- [Interface contracts](docs/architecture/interface-contracts.md) (whisper-cli / llama-cli invocation and JSON)
+- [Iteration plan](docs/iterations/iteration-plan.md) and [Gherkin user stories](docs/specification/user-stories-gherkin.md)
+- [Test strategy](docs/testing/test-strategy.md) and [test README](tests/LocalWhisper.Tests/README.md)
+- [Agent guidance](docs/meta/claude-integration-guide.md) and [handover notes](docs/meta/handover.md) for picking the project up again
 
-**See:** `docs/iterations/iteration-plan.md` for detailed roadmap.
+## Tech stack
 
----
-
-## Key Design Decisions (ADRs)
-
-- **ADR-0001:** Platform = .NET 8 + WPF (portable, fast development)
-- **ADR-0002:** STT/LLM via CLI subprocesses (robust, debuggable)
-- **ADR-0003:** Single data root folder (easy backup/migration)
-- **ADR-0005:** Custom flyout notification (reliable, fast)
-
-**See:** `docs/adr/0000-index.md` for all decisions.
-
----
-
-## Requirements Coverage
-
-- **Use Cases:** 4 (UC-001 through UC-004)
-- **Functional Requirements:** 14 (FR-010 through FR-024)
-- **Non-Functional Requirements:** 6 (NFR-001 through NFR-006)
-- **User Stories:** ~30 across 8 iterations
-- **BDD Scenarios:** Full coverage in `docs/testing/bdd-feature-seeds.md`
-
-**All requirements are traceable** to iterations and tests.
-
----
-
-## Performance Targets
-
-| Metric | Target | Verification |
-|--------|--------|--------------|
-| E2E Latency (hotkey → clipboard) | p95 ≤ 2.5s | Iteration 4, 8 |
-| Flyout Display | ≤ 0.5s | Iteration 4 |
-| Wizard Completion | < 2 min | Iteration 5 |
-| Memory Footprint (idle) | < 150 MB | Iteration 8 |
-| Crashes in Error Matrix | 0 | Iteration 8 |
-
----
-
-## Technology Stack
-
-- **Platform:** .NET 8 (C#)
-- **UI:** WPF (Windows Presentation Foundation)
-- **Audio:** WASAPI (via NAudio or P/Invoke)
-- **STT:** Whisper (CLI subprocess)
-- **Config:** TOML (via Tomlyn)
-- **Logging:** Serilog or NLog
-- **Testing:** xUnit, SpecFlow (BDD)
-
----
-
-## Repository Guidelines
-
-### For Developers
-
-**Branching:**
-- Implementation work happens on `claude/restructure-docs-architecture-01WktUKRshLh5fjn8noP9SQ2`
-- Tag iterations: `iter-1-complete`, `iter-2-complete`, etc.
-
-**Commits:**
-- Reference IDs: `feat(iter-1): [US-001] Hotkey toggles state`
-- Link to docs: `See: docs/iterations/iteration-01-hotkey-skeleton.md`
-
-**Definition of Done:**
-- See iteration files for detailed DoD checklists
-- All tests pass, docs updated, traceability maintained
-
-### For AI Agents (Claude Code)
-
-**Start here:** `docs/meta/claude-integration-guide.md`
-
-**Key files to read before implementing:**
-1. `docs/overview/product-summary.md` (product context)
-2. `docs/architecture/architecture-overview.md` (system design)
-3. `docs/iterations/iteration-plan.md` (roadmap)
-4. `docs/iterations/iteration-01-hotkey-skeleton.md` (first iteration)
-
-**Workflow:**
-1. Load iteration context
-2. Read referenced FR/NFR/UC docs
-3. Implement user stories
-4. Write tests (BDD + unit)
-5. Update traceability matrix
-6. Commit with proper references
-
----
-
-## Known Limitations (v0.1)
-
-**Out of scope for v0.1:**
-- ❌ Autostart (deferred; manual workaround available)
-- ❌ Code signing (SmartScreen warning expected)
-- ❌ Auto-update mechanism
-- ❌ GPU acceleration
-- ❌ Built-in history search UI
-- ❌ "Insert at cursor" functionality
-
-**Future versions:** See `docs/changelog/v0.1-planned.md` for roadmap.
-
----
-
-## Contributing
-
-This is currently a solo developer project with AI assistance (Claude Code).
-
-**For humans:** Contact project owner before contributing.
-
-**For AI agents:** Follow the guidelines in `docs/meta/claude-integration-guide.md`.
-
----
+.NET 8, WPF, [NAudio](https://github.com/naudio/NAudio) (WASAPI), [H.NotifyIcon](https://github.com/HavenDV/H.NotifyIcon) (tray),
+[Tomlyn](https://github.com/xoofx/Tomlyn) (config), [Serilog](https://serilog.net/) (logging),
+xUnit + FluentAssertions + Moq (tests). STT and LLM run as CLI subprocesses
+([ADR-0002](docs/adr/0002-cli-subprocesses.md)), not as in-process bindings.
 
 ## License
 
-[TBD - To be determined by project owner]
-
----
-
-## Support & Feedback
-
-- **Issues:** Report at [repository issue tracker]
-- **Questions:** See `docs/meta/how-to-use-this-repo.md` for troubleshooting
-
----
-
-## Quick Links
-
-**Documentation:**
-- [Product Summary](docs/overview/product-summary.md)
-- [Use Cases](docs/specification/use-cases.md)
-- [Requirements](docs/specification/functional-requirements.md)
-- [Architecture Overview](docs/architecture/architecture-overview.md)
-- [ADR Index](docs/adr/0000-index.md)
-- [Iteration Plan](docs/iterations/iteration-plan.md)
-- [Test Strategy](docs/testing/test-strategy.md)
-
-**For AI Agents:**
-- [How to Use This Repo](docs/meta/how-to-use-this-repo.md)
-- [Claude Integration Guide](docs/meta/claude-integration-guide.md)
-- [Iteration Execution Guide](docs/meta/iteration-execution-guide.md)
-
----
-
-**Last Updated:** 2025-09-17
-**Documentation Version:** v0.1 (Complete)
-**Implementation Status:** Ready to begin
+Not yet decided. Until a `LICENSE` file is added, all rights are reserved by the author;
+you may read and build the code, but ask before redistributing.

@@ -2,7 +2,7 @@
 
 **Purpose:** Complete implementation roadmap organized into vertical slices
 **Format:** 8 iterations, each delivering end-to-end value
-**Status:** Iterations 1-7 Complete (85%), Iteration 8 Pending
+**Status:** Iterations 1-7 complete, Iteration 8 not started. Project paused since December 2025 (no Windows machine); see `docs/meta/handover.md`.
 **Last Updated:** 2025-11-19
 
 ---

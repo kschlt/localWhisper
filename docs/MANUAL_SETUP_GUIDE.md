@@ -183,8 +183,8 @@ max_tokens = 512
 ## Step 10: Test the Application
 
 1. Open any text editor (e.g., Notepad)
-2. Press your configured hotkey (default: Ctrl+Shift+A)
-3. Speak into your microphone for ~500ms
+2. Press and hold your configured hotkey (default: Ctrl+Shift+A)
+3. Hold the hotkey while you speak, then release it
 4. The transcript should appear in your clipboard
 5. Paste (Ctrl+V) to see the result
 

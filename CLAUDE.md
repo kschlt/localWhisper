@@ -5,7 +5,9 @@
 **Portable Windows desktop app for offline speech-to-text dictation**
 
 Platform: .NET 8 + WPF | Whisper CLI | Offline-first
-Status: **Iterations 1-7 Complete (85%), Iteration 8 Pending**
+Status: **Iterations 1-7 complete, Iteration 8 not started. Paused since Dec 2025, not actively maintained.**
+
+**Read first if you are resuming work:** `docs/meta/handover.md` (state, known gaps, what can be verified without Windows).
 
 **Project Structure:** `docs/architecture/project-structure.md`
 **Icon Style Guide:** `docs/ui/icon-style-guide.md`
@@ -22,18 +24,17 @@ Status: **Iterations 1-7 Complete (85%), Iteration 8 Pending**
 4. `docs/architecture/project-structure.md` - Solution & folder structure
 5. `docs/ui/icon-style-guide.md` - Icon specifications
 
-**Current Status (2025-11-19):**
-- Iterations 1-7 are **fully implemented** and tested
-- Iteration 8 (Stabilization + Reset + Logs) is the final remaining task
-- All core functionality is working: hotkey, recording, STT, clipboard, history, flyout, wizard, settings, post-processing
-- 13 previously excluded tests have been re-enabled with full test infrastructure
-- Project is ~85% complete (34-48h of 40-60h estimated effort)
+**Current Status (2026-09-08):**
+- Iterations 1-7 are implemented; the app ran end-to-end on Windows in manual tests on 2025-12-04/05
+- The fixes from that testing round (hold-to-talk, real whisper-cli JSON, tray icon) are merged into `main`
+- Iteration 8 (Stabilization + Reset + Logs) was never started
+- The owner has no Windows machine: changes can only be verified via CI (`windows-latest` runner, non-WPF tests)
+- Known gaps: wizard lacks a whisper-cli path step, `ErrorDialog` settings button is a placeholder (PH-001)
 
 **Continuing implementation:**
-- Focus on Iteration 8: Stabilization, reset functionality, final logging improvements
-- Verify all NFRs, especially NFR-001 (p95 latency ≤ 2.5s)
-- Run full test suite regression
-- Prepare v0.1 release
+- Keep changes small enough that CI is meaningful verification (no Windows machine available)
+- Prefer the known gaps in `docs/meta/handover.md` over new features
+- Releases: push a `v*` tag, `.github/workflows/release.yml` builds and publishes the EXE
 
 **Manual testing:**
 - Execute test scripts from `docs/testing/manual-test-script-iter{N}.md`
@@ -183,7 +184,7 @@ Read: docs/adr/{relevant}.md                       # Specific decisions
 
 ## Current Implementation Status
 
-**Branch:** `claude/project-audit-1763549486`
+**Default branch:** `main` (all work merged; CI green = builds + non-WPF tests pass on `windows-latest`)
 
 **Completed Iterations (1-7):**
 - ✅ Iteration 1: Hotkey & App Skeleton
@@ -195,18 +196,14 @@ Read: docs/adr/{relevant}.md                       # Specific decisions
 - ✅ Iteration 6: Settings UI (Configuration Panel)
 - ✅ Iteration 7: Post-Processing (Optional LLM Integration)
 
-**Pending:**
-- 📋 Iteration 8: Stabilization + Reset + Logs
+**Not done:**
+- 📋 Iteration 8: Stabilization + Reset + Logs (never started)
 
-**Next Steps:**
-1. Complete Iteration 8 (error handling, reset functionality, performance verification)
-2. Verify all NFRs (especially p95 latency ≤ 2.5s)
-3. Run full test suite regression
-4. Tag v0.1 release
+**If resumed:** see `docs/meta/handover.md` for the prioritized gap list and a ready-made session prompt.
 
 **Test Infrastructure:**
-- All 13 previously excluded tests re-enabled (2025-11-19)
-- Comprehensive test coverage for iterations 1-7
+- ~230 xUnit tests; ~70 WPF window tests carry `Category=WpfIntegration` and are excluded on CI (need an interactive desktop)
+- History of the test clean-up: `docs/testing/history/`
 - TDD methodology followed with specifications as authority
 
-**Last Updated:** 2025-11-19
+**Last Updated:** 2026-09-08
