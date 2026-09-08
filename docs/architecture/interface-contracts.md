@@ -3,15 +3,21 @@
 **Purpose:** Define external interfaces (CLI tools, file formats, APIs)
 **Audience:** Developers implementing adapters and integrations
 **Status:** Normative (implementations must conform)
-**Last Updated:** 2025-09-17
+**Last Updated:** 2025-12-05 (Whisper CLI section corrected against real whisper.cpp output)
 
 ---
 
 ## Whisper CLI Contract (v1)
 
+> **Revision note (2025-12-05):** This section was corrected after the first end-to-end
+> test against real `whisper-cli.exe` (whisper.cpp). The original draft assumed
+> `--output-format json` / `--output-file` and a flat `{ "text": ... }` result; whisper.cpp
+> uses `-oj` / `-of` and a segment-based JSON. The adapter (`WhisperCLIAdapter`) and its
+> tests follow the format below.
+
 ### Command-Line Invocation
 
-**Executable:** `whisper-cli.exe` (or `whisper` on Linux/Mac if cross-platform later)
+**Executable:** `whisper-cli.exe` from a [whisper.cpp release](https://github.com/ggerganov/whisper.cpp/releases)
 **Location:** Configured in `config.toml` (`paths.whisper_cli_path`)
 
 **Command Format:**
@@ -19,8 +25,8 @@
 whisper-cli.exe \
   --model <model_path> \
   --language <lang_code> \
-  --output-format json \
-  --output-file <output_path> \
+  -oj \
+  -of <output_path_without_extension> \
   <input_wav_file>
 ```
 
@@ -28,42 +34,38 @@ whisper-cli.exe \
 
 | Parameter | Required | Description | Example |
 |-----------|----------|-------------|---------|
-| `--model` | Yes | Path to Whisper model file (.gguf) | `C:\...\models\ggml-small-de.gguf` |
+| `--model` | Yes | Path to Whisper model file (ggml `.bin`) | `C:\...\models\ggml-small.bin` |
 | `--language` | Yes | Language code (ISO 639-1) or "auto" | `de`, `en`, `auto` |
-| `--output-format` | Yes | Must be `json` | `json` |
-| `--output-file` | Yes | Path for JSON output | `C:\...\tmp\stt_result.json` |
-| `<input_wav_file>` | Yes | Path to input WAV file | `C:\...\tmp\rec_20250917_143022.wav` |
+| `-oj` | Yes | Write result as JSON | |
+| `-of` | Yes | Output path **without** extension; whisper-cli appends `.json` | `C:\...\tmp\stt_result` |
+| `<input_wav_file>` | Yes | Path to input WAV file (16 kHz mono PCM) | `C:\...\tmp\rec_20250917_143022.wav` |
 
 **Example Command:**
 ```bash
-whisper-cli.exe --model "C:\Data\models\ggml-small-de.gguf" --language de --output-format json --output-file "C:\Data\tmp\stt_result.json" "C:\Data\tmp\rec_20250917_143022.wav"
+whisper-cli.exe --model "C:\Data\models\ggml-small.bin" --language de -oj -of "C:\Data\tmp\stt_result" "C:\Data\tmp\rec_20250917_143022.wav"
 ```
 
 ---
 
 ### JSON Output Format
 
-**File:** `stt_result.json` (UTF-8 encoded)
+**File:** `<output_path>.json` (UTF-8 encoded), written by whisper-cli.
 
-**Schema:**
+**Schema (fields the adapter reads; all others are ignored):**
 
 ```json
 {
-  "text": "<full_transcription>",
-  "language": "<detected_or_specified_lang>",
-  "duration_sec": <float>,
-  "segments": [
+  "systeminfo": "...",
+  "model": { "...": "..." },
+  "params": { "...": "..." },
+  "result": { "language": "<detected_or_specified_lang>" },
+  "transcription": [
     {
-      "start": <float>,
-      "end": <float>,
+      "timestamps": { "from": "00:00:00,000", "to": "00:00:02,340" },
+      "offsets": { "from": <int_ms>, "to": <int_ms> },
       "text": "<segment_text>"
     }
-  ],
-  "meta": {
-    "model": "<model_name>",
-    "processing_time_sec": <float>,
-    "confidence": <float>
-  }
+  ]
 }
 ```
 
@@ -71,42 +73,28 @@ whisper-cli.exe --model "C:\Data\models\ggml-small-de.gguf" --language de --outp
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `text` | String | **Yes** | Full transcription (all segments concatenated) |
-| `language` | String | **Yes** | Detected or specified language (ISO 639-1) |
-| `duration_sec` | Float | **Yes** | Audio duration in seconds |
-| `segments` | Array | No | Word/sentence-level segments with timestamps |
-| `segments[].start` | Float | If segments | Segment start time (seconds from beginning) |
-| `segments[].end` | Float | If segments | Segment end time (seconds) |
-| `segments[].text` | String | If segments | Segment transcription |
-| `meta` | Object | No | Additional metadata |
-| `meta.model` | String | No | Model identifier (e.g., "whisper-small") |
-| `meta.processing_time_sec` | Float | No | STT processing duration |
-| `meta.confidence` | Float | No | Average confidence score (0.0-1.0) |
+| `result.language` | String | No | Detected or specified language (ISO 639-1); empty if absent |
+| `transcription` | Array | No | Segments in order; absent or empty = no speech detected |
+| `transcription[].text` | String | Yes | Segment text (usually has a leading space) |
+| `transcription[].offsets.from` | Integer | No | Segment start in milliseconds |
+| `transcription[].offsets.to` | Integer | No | Segment end in milliseconds |
+| `transcription[].timestamps` | Object | No | Same as offsets, formatted `HH:MM:SS,mmm` (not used) |
 
-**Example Output:**
+**Normalization (`WhisperCliJsonOutput.ToSTTResult()`):**
+- `STTResult.Text` = all segment texts concatenated, then trimmed
+- `STTResult.Segments[]` = start/end in seconds (offsets / 1000), text trimmed
+- `STTResult.DurationSeconds` = end of last segment (0 if no segments)
+- `STTResult.IsEmpty` = text is empty or whitespace
+
+**Example Output (abbreviated):**
 
 ```json
 {
-  "text": "Let me check on that and get back to you tomorrow morning.",
-  "language": "en",
-  "duration_sec": 4.8,
-  "segments": [
-    {
-      "start": 0.0,
-      "end": 2.3,
-      "text": "Let me check on that"
-    },
-    {
-      "start": 2.3,
-      "end": 4.8,
-      "text": "and get back to you tomorrow morning."
-    }
-  ],
-  "meta": {
-    "model": "whisper-small",
-    "processing_time_sec": 1.2,
-    "confidence": 0.86
-  }
+  "result": { "language": "en" },
+  "transcription": [
+    { "offsets": { "from": 0, "to": 2300 }, "text": " Let me check on that" },
+    { "offsets": { "from": 2300, "to": 4800 }, "text": " and get back to you tomorrow morning." }
+  ]
 }
 ```
 
@@ -133,7 +121,7 @@ whisper-cli.exe --model "C:\Data\models\ggml-small-de.gguf" --language de --outp
 
 ### Error Handling
 
-**If JSON is malformed or missing `text`:**
+**If JSON is malformed:**
 - Log error with file path and content snippet
 - Show dialog: "Transkription fehlgeschlagen. Bitte prüfen Sie die Logs."
 - Do not crash

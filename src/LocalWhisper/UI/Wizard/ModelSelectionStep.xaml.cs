@@ -31,19 +31,44 @@ public partial class ModelSelectionStep : UserControl
     private string? _modelFilePath;
     private string _selectedLanguage = "de"; // Default: German
     private readonly ModelValidator _validator = new();
+    private bool _isInitialized = false; // Guard flag to prevent event handlers during construction
 
     public event EventHandler? ModelChanged;
 
     public ModelSelectionStep()
     {
+        // Initialize data BEFORE InitializeComponent() to prevent null reference
+        // when XAML sets SelectedIndex="0" and triggers SelectionChanged
+        _allModels = ModelDefinition.GetAvailableModels();
+
         InitializeComponent();
 
-        _allModels = ModelDefinition.GetAvailableModels();
         LoadModelsForLanguage(_selectedLanguage);
+
+        // Enable button if model was auto-selected during LoadModelsForLanguage
+        if (ModelGrid.SelectedItem is ModelDefinition)
+        {
+            _selectedModel = ModelGrid.SelectedItem as ModelDefinition;
+            BrowseModelButton.IsEnabled = true;
+        }
+
+        _isInitialized = true; // Mark as fully initialized
+    }
+
+    /// <summary>
+    /// Reset scroll position to top when step is loaded
+    /// </summary>
+    public void ResetScrollPosition()
+    {
+        StepScrollViewer.ScrollToTop();
     }
 
     private void LanguageComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        // Guard: Don't run during InitializeComponent() when controls are still being created
+        if (!_isInitialized)
+            return;
+
         if (LanguageComboBox.SelectedItem is not ComboBoxItem selectedItem)
             return;
 
@@ -94,6 +119,10 @@ public partial class ModelSelectionStep : UserControl
 
     private void ModelGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        // Guard: Don't run during InitializeComponent() when controls are still being created
+        if (!_isInitialized)
+            return;
+
         if (ModelGrid.SelectedItem is not ModelDefinition model)
         {
             BrowseModelButton.IsEnabled = false;

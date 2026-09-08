@@ -1,14 +1,29 @@
 name: .NET Build and Test
 
+# One run per change:
+# - pull_request: every PR against main (this is the check the branch ruleset requires)
+# - push to main: after a merge, so the badge and the EXE artifact track main
+# - workflow_dispatch: run manually on any branch when you want CI without a PR
+# Feature branches do not run on plain push; open a PR (draft is fine) to get CI.
 on:
-  push:
-    branches: [ main, 'claude/**' ]
   pull_request:
     branches: [ main ]
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write        # test-reporter publishes a check run with the test summary
 
 jobs:
   build-and-test:
     runs-on: windows-latest
+    timeout-minutes: 25   # WPF tests have hung before; never block a runner for hours
 
     steps:
     - name: Checkout code
@@ -25,8 +40,19 @@ jobs:
     - name: Build solution
       run: dotnet build LocalWhisper.sln --configuration Release --no-restore
 
+    # WPF window tests (Category=WpfIntegration) need an interactive desktop and are
+    # excluded on the hosted runner. See tests/LocalWhisper.Tests/README.md.
     - name: Run unit tests
-      run: dotnet test LocalWhisper.sln --configuration Release --no-build --verbosity normal --filter "Category!=WpfIntegration" --logger "trx;LogFileName=test-results.trx"
+      run: dotnet test LocalWhisper.sln --configuration Release --no-build --verbosity minimal --filter "Category!=WpfIntegration" --logger "trx;LogFileName=test-results.trx"
+
+    - name: Publish test summary
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: Unit test results
+        path: '**/TestResults/*.trx'
+        reporter: dotnet-trx
+        fail-on-error: false
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
@@ -34,3 +60,16 @@ jobs:
       with:
         name: test-results
         path: '**/TestResults/*.trx'
+        retention-days: 14
+
+    # Portable single-file build. This is the same artifact the release workflow ships,
+    # so every green CI run doubles as a smoke test that the app still publishes.
+    - name: Publish portable EXE (win-x64)
+      run: dotnet publish src/LocalWhisper/LocalWhisper.csproj --configuration Release --runtime win-x64 --self-contained true --output publish/win-x64
+
+    - name: Upload portable EXE
+      uses: actions/upload-artifact@v4
+      with:
+        name: LocalWhisper-win-x64-${{ github.sha }}
+        path: publish/win-x64/LocalWhisper.exe
+        retention-days: 14

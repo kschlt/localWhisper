@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -82,6 +83,7 @@ public partial class WizardWindow : Window
                     _modelSelectionStep.ModelChanged += (s, e) => NextButton.IsEnabled = _modelSelectionStep.IsValid();
                 }
                 ContentArea.Content = _modelSelectionStep;
+                _modelSelectionStep.ResetScrollPosition(); // Ensure scroll starts at top
                 NextButton.IsEnabled = _modelSelectionStep.IsValid();
                 break;
 
@@ -192,6 +194,18 @@ public partial class WizardWindow : Window
             }
 
             DataRoot = _dataRootStep.GetDataRoot();
+
+            // Create directory if it doesn't exist (safe for default path)
+            try
+            {
+                Directory.CreateDirectory(DataRoot);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.LogError("Failed to create data root directory", ex, new { DataRoot });
+                MessageBox.Show($"Fehler beim Erstellen des Ordners:\n\n{ex.Message}", "Fehler", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
 
             // Validate write access
             if (!_manager.ValidateDataRoot(DataRoot))

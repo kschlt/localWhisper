@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -21,6 +22,10 @@ namespace LocalWhisper.UI.TrayIcon;
 /// </remarks>
 public class TrayIconManager : IDisposable
 {
+    // Import DestroyIcon for proper GDI handle cleanup
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern bool DestroyIcon(IntPtr hIcon);
+
     private readonly TaskbarIcon _trayIcon;
     private readonly StateMachine _stateMachine;
     private readonly Window _hiddenWindow;
@@ -61,17 +66,34 @@ public class TrayIconManager : IDisposable
         _hiddenWindow.Show();
 
         // Create tray icon
-        _trayIcon = new TaskbarIcon
+        try
         {
-            Icon = CreateIcon(AppState.Idle),
-            ToolTipText = IconResources.GetStateTooltip(AppState.Idle, "de"),
-            ContextMenu = CreateContextMenu()
-        };
+            var icon = CreateIcon(AppState.Idle);
+            var tooltip = IconResources.GetStateTooltip(AppState.Idle, "de");
+            var contextMenu = CreateContextMenu();
 
-        // Subscribe to state changes
-        _stateMachine.StateChanged += OnStateChanged;
+            _trayIcon = new TaskbarIcon
+            {
+                Icon = icon,
+                ToolTipText = tooltip,
+                ContextMenu = contextMenu,
+                Visibility = Visibility.Visible // Make tray icon visible
+            };
 
-        AppLogger.LogInformation("Tray icon initialized");
+            // Force immediate creation of the tray icon; without this the icon
+            // was not shown reliably (observed in manual testing, Dec 2025).
+            _trayIcon.ForceCreate(enablesEfficiencyMode: false);
+
+            // Subscribe to state changes
+            _stateMachine.StateChanged += OnStateChanged;
+
+            AppLogger.LogInformation("Tray icon initialized");
+        }
+        catch (Exception ex)
+        {
+            AppLogger.LogError("Failed to create tray icon", ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -137,7 +159,7 @@ public class TrayIconManager : IDisposable
         var bitmap = new RenderTargetBitmap(32, 32, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(visual);
 
-        // Convert to System.Drawing.Icon
+        // Convert to System.Drawing.Icon with proper GDI handle cleanup
         using var stream = new System.IO.MemoryStream();
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));
@@ -145,7 +167,27 @@ public class TrayIconManager : IDisposable
         stream.Seek(0, System.IO.SeekOrigin.Begin);
 
         using var bmp = new System.Drawing.Bitmap(stream);
-        return System.Drawing.Icon.FromHandle(bmp.GetHicon());
+
+        // Get icon handle from bitmap
+        IntPtr iconHandle = bmp.GetHicon();
+
+        try
+        {
+            // Create icon from handle
+            using var tempIcon = System.Drawing.Icon.FromHandle(iconHandle);
+
+            // Clone icon to create independent copy
+            // This ensures the icon persists after we destroy the handle
+            var clonedIcon = (System.Drawing.Icon)tempIcon.Clone();
+
+            return clonedIcon;
+        }
+        finally
+        {
+            // Always destroy GDI handle to prevent memory leak
+            // This is critical - Icon.FromHandle() doesn't manage the handle lifecycle
+            DestroyIcon(iconHandle);
+        }
     }
 
     /// <summary>

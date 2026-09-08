@@ -60,17 +60,33 @@ public class WhisperCLIAdapterTests : IDisposable
         }
     }
 
+    /// <summary>
+    /// Real whisper-cli (-oj) output shape. Extra top-level fields (systeminfo,
+    /// model, params) are present in real output and must be ignored.
+    /// </summary>
+    private static string WhisperJson(string language, params (int fromMs, int toMs, string text)[] segments)
+    {
+        var segs = string.Join(",\n", segments.Select(s => $@"
+            {{
+                ""timestamps"": {{ ""from"": ""00:00:00,000"", ""to"": ""00:00:00,000"" }},
+                ""offsets"": {{ ""from"": {s.fromMs}, ""to"": {s.toMs} }},
+                ""text"": ""{s.text}""
+            }}"));
+        return $@"{{
+            ""systeminfo"": ""AVX = 1 | AVX2 = 1"",
+            ""model"": {{ ""type"": ""small"", ""multilingual"": true }},
+            ""params"": {{ ""model"": ""ggml-small.bin"", ""language"": ""{language}"" }},
+            ""result"": {{ ""language"": ""{language}"" }},
+            ""transcription"": [{segs}]
+        }}";
+    }
+
     [Fact]
     public void ParseJSONOutput_ValidJSON_ReturnsSTTResult()
     {
         // Arrange
         var jsonPath = Path.Combine(_testDirectory, "result.json");
-        var jsonContent = @"{
-            ""text"": ""Dies ist ein Test."",
-            ""language"": ""de"",
-            ""duration_sec"": 2.5
-        }";
-        File.WriteAllText(jsonPath, jsonContent);
+        File.WriteAllText(jsonPath, WhisperJson("de", (0, 2500, " Dies ist ein Test.")));
 
         var adapter = new WhisperCLIAdapter(_config);
 
@@ -79,23 +95,18 @@ public class WhisperCLIAdapterTests : IDisposable
 
         // Assert
         result.Should().NotBeNull();
-        result.Text.Should().Be("Dies ist ein Test.");
+        result.Text.Should().Be("Dies ist ein Test.", "leading whitespace from whisper-cli is trimmed");
         result.Language.Should().Be("de");
-        result.DurationSeconds.Should().Be(2.5);
+        result.DurationSeconds.Should().Be(2.5, "duration is derived from the last segment offset");
         result.IsEmpty.Should().BeFalse();
     }
 
     [Fact]
-    public void ParseJSONOutput_EmptyText_ReturnsEmptyResult()
+    public void ParseJSONOutput_NoTranscriptionSegments_ReturnsEmptyResult()
     {
         // Arrange
         var jsonPath = Path.Combine(_testDirectory, "empty.json");
-        var jsonContent = @"{
-            ""text"": """",
-            ""language"": ""de"",
-            ""duration_sec"": 1.0
-        }";
-        File.WriteAllText(jsonPath, jsonContent);
+        File.WriteAllText(jsonPath, WhisperJson("de"));
 
         var adapter = new WhisperCLIAdapter(_config);
 
@@ -103,7 +114,9 @@ public class WhisperCLIAdapterTests : IDisposable
         var result = adapter.ParseJSONOutput(jsonPath);
 
         // Assert
-        result.IsEmpty.Should().BeTrue("empty text should be detected");
+        result.IsEmpty.Should().BeTrue("no transcription segments means no speech detected");
+        result.Segments.Should().BeNull();
+        result.DurationSeconds.Should().Be(0);
     }
 
     [Fact]
@@ -111,12 +124,7 @@ public class WhisperCLIAdapterTests : IDisposable
     {
         // Arrange
         var jsonPath = Path.Combine(_testDirectory, "whitespace.json");
-        var jsonContent = @"{
-            ""text"": ""   "",
-            ""language"": ""de"",
-            ""duration_sec"": 1.0
-        }";
-        File.WriteAllText(jsonPath, jsonContent);
+        File.WriteAllText(jsonPath, WhisperJson("de", (0, 1000, "   ")));
 
         var adapter = new WhisperCLIAdapter(_config);
 
@@ -125,6 +133,23 @@ public class WhisperCLIAdapterTests : IDisposable
 
         // Assert
         result.IsEmpty.Should().BeTrue("whitespace-only text should be treated as empty");
+    }
+
+    [Fact]
+    public void ParseJSONOutput_MissingResultAndTranscription_ReturnsEmptyResult()
+    {
+        // Arrange: valid JSON, but none of the fields we care about
+        var jsonPath = Path.Combine(_testDirectory, "unrelated.json");
+        File.WriteAllText(jsonPath, @"{ ""systeminfo"": ""x"" }");
+
+        var adapter = new WhisperCLIAdapter(_config);
+
+        // Act
+        var result = adapter.ParseJSONOutput(jsonPath);
+
+        // Assert
+        result.IsEmpty.Should().BeTrue();
+        result.Language.Should().BeEmpty();
     }
 
     [Fact]
@@ -164,16 +189,7 @@ public class WhisperCLIAdapterTests : IDisposable
     {
         // Arrange
         var jsonPath = Path.Combine(_testDirectory, "segments.json");
-        var jsonContent = @"{
-            ""text"": ""Hello world."",
-            ""language"": ""en"",
-            ""duration_sec"": 2.0,
-            ""segments"": [
-                { ""start"": 0.0, ""end"": 1.0, ""text"": ""Hello"" },
-                { ""start"": 1.0, ""end"": 2.0, ""text"": ""world."" }
-            ]
-        }";
-        File.WriteAllText(jsonPath, jsonContent);
+        File.WriteAllText(jsonPath, WhisperJson("en", (0, 1000, " Hello"), (1000, 2000, " world.")));
 
         var adapter = new WhisperCLIAdapter(_config);
 
@@ -181,10 +197,16 @@ public class WhisperCLIAdapterTests : IDisposable
         var result = adapter.ParseJSONOutput(jsonPath);
 
         // Assert
+        result.Text.Should().Be("Hello world.", "segment texts are concatenated as-is, then trimmed");
         result.Segments.Should().NotBeNull();
         result.Segments.Should().HaveCount(2);
         result.Segments![0].Text.Should().Be("Hello");
+        result.Segments[0].Start.Should().Be(0.0);
+        result.Segments[0].End.Should().Be(1.0, "offsets are milliseconds and converted to seconds");
         result.Segments[1].Text.Should().Be("world.");
+        result.Segments[1].Start.Should().Be(1.0);
+        result.Segments[1].End.Should().Be(2.0);
+        result.DurationSeconds.Should().Be(2.0);
     }
 
     [Fact]
@@ -285,8 +307,25 @@ public class WhisperCLIAdapterTests : IDisposable
         args.Should().Contain(_config.ModelPath);
         args.Should().Contain("--language");
         args.Should().Contain("de");
-        args.Should().Contain("--output-format");
-        args.Should().Contain("json");
+        args.Should().Contain("-oj ", "whisper-cli's JSON output flag is -oj (not --output-format)");
+        args.Should().NotContain("--output-format");
         args.Should().Contain(wavPath);
+    }
+
+    [Fact]
+    public void BuildCommandArguments_OutputFile_IsPassedWithoutJsonExtension()
+    {
+        // whisper-cli appends ".json" itself to the -of path (US-020, interface-contracts.md)
+        var wavPath = Path.Combine(_testDirectory, "test.wav");
+        var jsonPath = Path.Combine(_testDirectory, "stt_result.json");
+        var adapter = new WhisperCLIAdapter(_config);
+
+        // Act
+        var args = adapter.BuildCommandArguments(wavPath, jsonPath);
+
+        // Assert
+        var expectedStem = Path.Combine(_testDirectory, "stt_result");
+        args.Should().Contain($"-of \"{expectedStem}\"");
+        args.Should().NotContain("stt_result.json");
     }
 }

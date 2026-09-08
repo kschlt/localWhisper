@@ -117,7 +117,8 @@ public static class ConfigManager
     /// </summary>
     /// <param name="configPath">Path to config.toml file</param>
     /// <param name="config">Configuration to save</param>
-    public static void Save(string configPath, AppConfig config)
+    /// <param name="skipPostProcessingValidation">Skip PostProcessing validation (used during wizard when paths not yet configured)</param>
+    public static void Save(string configPath, AppConfig config, bool skipPostProcessingValidation = false)
     {
         // Validate before saving
         config.Hotkey.Validate();
@@ -125,7 +126,12 @@ public static class ConfigManager
         {
             config.Whisper.Validate();
         }
-        config.PostProcessing.Validate();
+
+        // Skip PostProcessing validation during wizard (paths configured later)
+        if (!skipPostProcessingValidation)
+        {
+            config.PostProcessing.Validate();
+        }
 
         // Build TomlArray from modifiers list
         var modifiersArray = new TomlArray();

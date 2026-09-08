@@ -113,13 +113,15 @@ public class WhisperCLIAdapter
         // Language
         args.Append($"--language {_config.Language} ");
 
-        // Output format
-        args.Append("--output-format json ");
+        // Output JSON format
+        args.Append("-oj ");
 
         // Output file (if specified)
+        // Note: -of expects path WITHOUT extension, whisper-cli adds .json automatically
         if (!string.IsNullOrEmpty(outputJsonPath))
         {
-            args.Append($"--output-file \"{outputJsonPath}\" ");
+            var outputPathWithoutExtension = Path.ChangeExtension(outputJsonPath, null);
+            args.Append($"-of \"{outputPathWithoutExtension}\" ");
         }
 
         // Input WAV file
@@ -150,12 +152,16 @@ public class WhisperCLIAdapter
                 PropertyNameCaseInsensitive = true
             };
 
-            var result = JsonSerializer.Deserialize<STTResult>(jsonContent, options);
+            // Try to parse as WhisperCliJsonOutput (actual format from -oj flag)
+            var whisperOutput = JsonSerializer.Deserialize<WhisperCliJsonOutput>(jsonContent, options);
 
-            if (result == null)
+            if (whisperOutput == null)
             {
-                throw new STTException("Failed to deserialize STT result: null result");
+                throw new STTException("Failed to deserialize Whisper CLI output: null result");
             }
+
+            // Convert to STTResult
+            var result = whisperOutput.ToSTTResult();
 
             return result;
         }
