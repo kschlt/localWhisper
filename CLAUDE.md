@@ -1,209 +1,71 @@
 # LocalWhisper
 
-**Working Name** (replaceable before v1.0)
+Portable Windows tray app for offline hold-to-talk dictation. .NET 8 + WPF, whisper.cpp
+via CLI subprocess. Spec-driven: every feature traces UC → FR → US → code → test.
 
-**Portable Windows desktop app for offline speech-to-text dictation**
+Project state and known gaps: `docs/status.md`. Resuming after a pause: `docs/meta/handover.md`.
+Do not put status information in this file; it belongs in those two.
 
-Platform: .NET 8 + WPF | Whisper CLI | Offline-first
-Status: **Iterations 1-7 complete, Iteration 8 not started. Paused since Dec 2025, not actively maintained.**
+## Build and test
 
-**Read first if you are resuming work:** `docs/meta/handover.md` (state, known gaps, what can be verified without Windows).
-
-**Project Structure:** `docs/architecture/project-structure.md`
-**Icon Style Guide:** `docs/ui/icon-style-guide.md`
-**Placeholders Tracker:** `docs/meta/placeholders-tracker.md`
-
----
-
-## Quick Start
-
-**New session? Start here:**
-1. `docs/meta/claude-integration-guide.md` - AI workflow & context loading
-2. `docs/iterations/iteration-plan.md` - 8-iteration roadmap
-3. `docs/specification/user-stories-gherkin.md` - BDD scenarios by iteration
-4. `docs/architecture/project-structure.md` - Solution & folder structure
-5. `docs/ui/icon-style-guide.md` - Icon specifications
-
-**Current Status (2026-09-08):**
-- Iterations 1-7 are implemented; the app ran end-to-end on Windows in manual tests on 2025-12-04/05
-- The fixes from that testing round (hold-to-talk, real whisper-cli JSON, tray icon) are merged into `main`
-- Iteration 8 (Stabilization + Reset + Logs) was never started
-- The owner has no Windows machine: changes can only be verified via CI (`windows-latest` runner, non-WPF tests)
-- Known gaps: wizard lacks a whisper-cli path step, `ErrorDialog` settings button is a placeholder (PH-001)
-
-**Continuing implementation:**
-- Keep changes small enough that CI is meaningful verification (no Windows machine available)
-- Prefer the known gaps in `docs/meta/handover.md` over new features
-- Releases: push a `v*` tag, `.github/workflows/release.yml` builds and publishes the EXE
-
-**Manual testing:**
-- Execute test scripts from `docs/testing/manual-test-script-iter{N}.md`
-
----
-
-## Core Workflow
-
-```
-User holds hotkey → Audio recorded → Whisper STT → Clipboard + History + Flyout
+```powershell
+dotnet build LocalWhisper.sln -c Release
+dotnet test  LocalWhisper.sln -c Release --filter "Category!=WpfIntegration"
+dotnet publish src/LocalWhisper/LocalWhisper.csproj -c Release -r win-x64 --self-contained -o publish
 ```
 
-**8 Iterations (sequential):**
-1. Hotkey & skeleton (4-6h) ✅ **Complete**
-2. Audio recording (4-6h) ✅ **Complete**
-3. STT integration (6-8h) ✅ **Complete**
-4. Clipboard + History + Flyout (6-10h) ✅ **Complete** ★ E2E works
-5. First-run wizard (8-12h) ✅ **Complete** (5a: Wizard + 5b: Download/Repair)
-6. Settings UI (4-6h) ✅ **Complete**
-7. Post-processing (4-6h) ✅ **Complete**
-8. Stabilization + reset (6-10h) 📋 **Pending** ★ v0.1 release
+- WPF only builds on Windows. In a Linux session (Claude Code on the web) you cannot
+  compile or run tests; CI on `windows-latest` is the verification. Keep changes small
+  enough that a green CI run is meaningful, and re-read your diff before pushing.
+- Tests that open real WPF windows carry `[Trait("Category", "WpfIntegration")]` and are
+  excluded on CI. Do not change that filter; do not add new window-level tests.
+- Releases: push a `v*` tag, `.github/workflows/release.yml` builds and publishes the EXE.
+  Only the owner tags.
 
----
+## Where things are
 
-## ID System (Use in commits)
+| Need | File |
+|---|---|
+| Solution layout | `docs/architecture/project-structure.md` |
+| Requirements (UC/FR/NFR) | `docs/specification/` |
+| Gherkin scenarios per iteration | `docs/specification/user-stories-gherkin.md` (`@Iter-N` tags) |
+| Architecture, ADRs | `docs/architecture/architecture-overview.md`, `docs/adr/0000-index.md` |
+| CLI contracts (whisper-cli, llama-cli) | `docs/architecture/interface-contracts.md` |
+| Roadmap and per-iteration DoD | `docs/iterations/` |
+| Traceability | `docs/specification/traceability-matrix.md` |
+| Placeholders (PH-###) | `docs/meta/placeholders-tracker.md` |
+| Detailed agent workflow, context loading | `docs/meta/claude-integration-guide.md` |
+| UI colours and icons | `docs/ui/` |
 
-| Prefix | Example | Where |
-|--------|---------|-------|
-| `UC-###` | UC-001 (Quick dictation) | `docs/specification/use-cases.md` |
-| `FR-###` | FR-010 (Hotkey registration) | `docs/specification/functional-requirements.md` |
-| `NFR-###` | NFR-001 (p95 ≤ 2.5s latency) | `docs/specification/non-functional-requirements.md` |
-| `ADR-####` | ADR-0001 (Platform: .NET + WPF) | `docs/adr/` |
-| `US-###` | US-001 (Hotkey toggles state) | `docs/specification/user-stories-gherkin.md` |
+## Rules
 
-**Traceability:** UC → FR → US → Code (update `traceability-matrix.md`)
+**Test-first.** Write or update tests from the Gherkin scenario before touching
+implementation. Review your own tests as a second person (spec match, edge cases,
+not asserting wrong behaviour), then implement, then review the implementation the same
+way. Do not stop to ask for that review; do both roles yourself.
 
----
+**Stay in scope.** Implement what the referenced US/FR says, nothing more. Changing a
+requirement means updating the spec file in the same change. Changing a CLI invocation or
+JSON shape means updating `docs/architecture/interface-contracts.md` in the same change.
 
-## Critical Constraints (from ADRs)
+**Constraints from ADRs.** .NET 8 + WPF only (ADR-0001). STT and LLM as CLI subprocesses,
+never FFI (ADR-0002). One data root folder (ADR-0003). Custom flyout, not Windows toast
+(ADR-0005).
 
-- Platform: .NET 8 + WPF (no cross-platform)
-- STT via CLI subprocess, NOT FFI (ADR-0002)
-- Single data root folder (ADR-0003)
-- Custom flyout, NOT Windows toast (ADR-0005)
+**Logging.** Structured logging via `AppLogger` for state transitions, errors and timings.
+No debug-only timers or step-by-step logging left in committed code.
 
-**See:** `docs/adr/0000-index.md` for all decisions
+**Language.** UI strings in German, code and docs in English.
 
----
+## Commits and traceability
 
-## Implementation Rules
+- Conventional prefix plus IDs: `feat(iter-6): [US-050] Settings window`, `fix(stt): ... See: US-020`.
+- When adding behaviour: update `docs/specification/traceability-matrix.md` and add a
+  line to `docs/changelog/v0.1-planned.md`.
+- When resolving a placeholder: mark it in `docs/meta/placeholders-tracker.md` and remove
+  the `TODO(PH-###)` comment.
 
-**Test-Driven Development (TDD) - MANDATORY:**
-1. **Write tests FIRST** based on Gherkin scenarios and acceptance criteria
-2. **Switch to Senior Dev/Architect role** - Review your own tests (four-eyes principle):
-   - Verify tests match specifications exactly
-   - Check tests cover both happy path AND edge cases
-   - Ensure tests don't validate incorrect behavior
-   - Identify missing test cases, performance issues, edge cases
-   - Provide detailed feedback (as senior dev to yourself)
-3. **Switch back to Implementation role** - Fix tests based on your own review feedback
-4. **Implement** code to make tests pass
-5. **Switch to Senior Dev role again** - Review your own implementation:
-   - Check code quality, patterns, error handling
-   - Verify implementation matches specifications
-   - Identify bugs, security issues, performance problems
-   - Provide detailed feedback on improvements needed
-6. **Switch back to Implementation role** - Fix issues from your code review
-7. **Refactor** while keeping tests green
-8. **Never** write tests after implementation (prevents testing wrong behavior)
+## When unclear
 
-**CRITICAL:** Never stop and wait for user feedback - play both roles yourself in sequence and continue until complete!
-
-**DO:**
-- Work sequentially (Iteration 1 → 2 → 3 → ... → 8)
-- Follow acceptance criteria exactly (no scope creep)
-- Add structured logging (state transitions, errors, metrics)
-- Update traceability matrix when adding code
-- Reference US-###, FR-### in commits
-- Write tests BEFORE implementation (TDD)
-
-**DON'T:**
-- Skip iterations or implement ahead
-- Change requirements without updating specs
-- Modify CLI contracts without updating `docs/architecture/interface-contracts.md`
-- Break the ID traceability chain
-- Write tests after implementation (always test-first!)
-
----
-
-## Definition of Done (Every Iteration)
-
-- [ ] All US-### acceptance criteria satisfied
-- [ ] BDD scenarios `@Iter-{N}` pass
-- [ ] No regressions (previous tests pass)
-- [ ] Logging added for key operations
-- [ ] Traceability matrix updated
-- [ ] Changelog entry added
-- [ ] Performance measured (if NFR applies)
-
-**See:** Each iteration file has detailed DoD checklist
-
----
-
-## Performance Targets
-
-| Metric | Target | When |
-|--------|--------|------|
-| E2E latency (hotkey → clipboard) | p95 ≤ 2.5s | Iter 4, 8 |
-| Flyout display | ≤ 0.5s | Iter 4 |
-| Wizard completion | < 2 min | Iter 5 |
-
----
-
-## Quick Reference
-
-**Find a requirement:**
-```bash
-Grep: "FR-012" in docs/specification/functional-requirements.md
-```
-
-**Load iteration context:**
-```bash
-Read: docs/specification/user-stories-gherkin.md  # Find @Iter-{N} section
-Read: docs/iterations/iteration-plan.md          # Overview & dependencies
-```
-
-**Find BDD scenarios:**
-```bash
-Grep: "@Iter-3" in docs/specification/user-stories-gherkin.md
-```
-
-**Check architecture:**
-```bash
-Read: docs/architecture/architecture-overview.md  # Components & flow
-Read: docs/adr/{relevant}.md                       # Specific decisions
-```
-
----
-
-## When Unclear
-
-1. **Ambiguous AC?** → Check referenced FR-###, then ADR-####, then ask user
-2. **Missing detail?** → Check if intentionally flexible, document decision in commit
-3. **Conflict?** → Check traceability matrix for priority, flag if unresolved
-
----
-
-## Current Implementation Status
-
-**Default branch:** `main` (all work merged; CI green = builds + non-WPF tests pass on `windows-latest`)
-
-**Completed Iterations (1-7):**
-- ✅ Iteration 1: Hotkey & App Skeleton
-- ✅ Iteration 2: Audio Recording (WASAPI)
-- ✅ Iteration 3: STT Integration (Whisper CLI)
-- ✅ Iteration 4: Clipboard + History + Flyout
-- ✅ Iteration 5a: Wizard Core (File Selection, Model Verification)
-- ✅ Iteration 5b: Download + Repair (HTTP Download, Repair Flow)
-- ✅ Iteration 6: Settings UI (Configuration Panel)
-- ✅ Iteration 7: Post-Processing (Optional LLM Integration)
-
-**Not done:**
-- 📋 Iteration 8: Stabilization + Reset + Logs (never started)
-
-**If resumed:** see `docs/meta/handover.md` for the prioritized gap list and a ready-made session prompt.
-
-**Test Infrastructure:**
-- ~230 xUnit tests; ~70 WPF window tests carry `Category=WpfIntegration` and are excluded on CI (need an interactive desktop)
-- History of the test clean-up: `docs/testing/history/`
-- TDD methodology followed with specifications as authority
-
-**Last Updated:** 2026-09-08
+Ambiguous acceptance criterion: read the referenced FR, then the ADR, then ask.
+Conflict between docs: the traceability matrix decides; flag it if still unresolved.

@@ -8,6 +8,8 @@ again, plus a ready-to-paste prompt.
 
 ## Where the project stands
 
+User-facing summary: `docs/status.md`. This file holds the developer view.
+
 - Iterations 1-7 are implemented. Iteration 8 (stabilisation, reset flow, NFR-001 latency
   verification, release) was never started.
 - The last real-world testing happened on 2025-12-04/05 on a Windows machine. The fixes
@@ -51,7 +53,7 @@ again, plus a ready-to-paste prompt.
 Paste this into a fresh Claude Code session on this repository:
 
 ```
-Read CLAUDE.md, README.md and docs/meta/handover.md first.
+Read CLAUDE.md, docs/status.md and docs/meta/handover.md first.
 
 Context: LocalWhisper is a finished-enough prototype that is not actively developed.
 The owner currently has no Windows machine, so anything you change can only be verified
