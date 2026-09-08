@@ -34,7 +34,7 @@ User-facing summary: `docs/status.md`. This file holds the developer view.
    interactive desktop. `tests/LocalWhisper.Tests/README.md` explains the split.
 4. Iteration 8 as specified: reset function, error matrix, p95 latency ≤ 2.5 s
    (`docs/specification/non-functional-requirements.md`, NFR-001).
-5. No license file. No code signing (SmartScreen warning).
+5. No code signing (SmartScreen warning).
 
 ## What can be done without a Windows machine
 

@@ -69,5 +69,5 @@ STT and LLM run as CLI subprocesses, not in-process bindings ([ADR-0002](docs/ad
 
 ## License
 
-Not yet decided. Until a `LICENSE` file is added, all rights are reserved by the author;
-you may read and build the code, but ask before redistributing.
+[MIT](LICENSE). whisper.cpp and llama.cpp are separate projects under their own MIT
+licenses; Whisper and Llama model files have their own terms.
