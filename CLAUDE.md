@@ -17,6 +17,8 @@ dotnet publish src/LocalWhisper/LocalWhisper.csproj -c Release -r win-x64 --self
 - WPF only builds on Windows. In a Linux session (Claude Code on the web) you cannot
   compile or run tests; CI on `windows-latest` is the verification. Keep changes small
   enough that a green CI run is meaningful, and re-read your diff before pushing.
+- CI runs on pull requests against `main` and on pushes to `main`, not on plain pushes
+  to feature branches. Open a (draft) PR early to get CI on your branch.
 - Tests that open real WPF windows carry `[Trait("Category", "WpfIntegration")]` and are
   excluded on CI. Do not change that filter; do not add new window-level tests.
 - Releases: push a `v*` tag, `.github/workflows/release.yml` builds and publishes the EXE.

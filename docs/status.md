@@ -42,7 +42,7 @@ iteration delivered.
 
 ## Testing state
 
-- ~230 xUnit tests. CI runs them on `windows-latest` on every push and attaches a portable
+- ~230 xUnit tests. CI runs them on `windows-latest` for every pull request and merge to `main` and attaches a portable
   `LocalWhisper.exe` as an artifact.
 - ~70 tests that open real WPF windows are tagged `Category=WpfIntegration` and excluded on
   CI; they need an interactive desktop. See the [test README](../tests/LocalWhisper.Tests/README.md).

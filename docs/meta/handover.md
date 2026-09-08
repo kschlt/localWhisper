@@ -18,8 +18,9 @@ User-facing summary: `docs/status.md`. This file holds the developer view.
   2026 together with matching test updates.
 - Since then the owner has no Windows machine. Nothing after 2025-12-05 has been run on
   Windows; it has only been compiled and unit-tested on the GitHub `windows-latest` runner.
-- CI (`.github/workflows/dotnet-build-test.yml`) builds, runs the non-WPF tests and
-  uploads a portable `LocalWhisper.exe` artifact on every push.
+- CI (`.github/workflows/dotnet-build-test.yml`) builds, runs the non-WPF tests, posts a
+  test summary as a check run, and uploads a portable `LocalWhisper.exe` artifact. It runs
+  on PRs against `main` and on pushes to `main` (open a draft PR to get CI on a branch).
 - Pushing a tag `v*` runs `.github/workflows/release.yml`, which builds the EXE, zips it
   with the setup guide and creates a GitHub (pre-)release.
 
